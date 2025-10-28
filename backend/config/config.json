@@ -1,8 +1,8 @@
 {
     "development": {
-      "username": "test_user",
-      "password": "testpassword",
-      "database": "test_database",
+      "username": "ticket_user",
+      "password": "Lycan1919!",
+      "database": "ticketing_system",
       "host": "127.0.0.1",
       "dialect": "postgres", 
       "_comment": "This is a comment and will be ignored by code",
