@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import ASULogo from "../../assets/ASULogo.png";
 import CreateTicket from "../CreateTicket/CreateTicket";
 import InstructorCreateTicket from "../CreateTicket/InstructorCreateTicket";
+import BugReportIcon from "@mui/icons-material/BugReport";
 import "./SideBar.css";
 
 
@@ -213,7 +214,15 @@ const SideBar = () => {
       )}
 
       <List className="settingsAndLogOut">
-        <ListItemButton
+         <ListItemButton
+          className="buttonStyle"
+          selected={selectedPage === 7}
+          onClick={() => { setSelectedPage(7); navigate("/bug-report"); }}
+      >
+        <ListItemIcon><BugReportIcon className="iconStyle" /></ListItemIcon>
+        <ListItemText className="fontStyle" primary="Report a Bug" />
+      </ListItemButton>
+      <ListItemButton
           className="buttonStyle"
           onClick={() => {
             setSelectedPage(4);
