@@ -36,7 +36,6 @@ import ManageTAs from "./pages/ManageUsers/ManageTAs";
 <<<<<<< HEAD
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
 =======
-import ManageStudents from "./pages/ManageStudents/ManageStudents";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
 >>>>>>> c994bba (more updates to the bug report page)
 
