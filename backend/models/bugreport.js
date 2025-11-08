@@ -20,7 +20,9 @@ module.exports = (sequelize, DataTypes) => {
       reporterRole: { type: DataTypes.STRING(30) },
       user_id:      { type: DataTypes.INTEGER }, // FK to Users.user_id
     },
-    { sequelize, modelName: 'BugReport' }
+    { sequelize, modelName: 'BugReport',
+                tableName: 'bugreports'
+    }
   );
 
   return BugReport;

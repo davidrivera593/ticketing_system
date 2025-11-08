@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('BugReports', {
+    await queryInterface.createTable('bugreports', {
       id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
 
       subject:      { type: Sequelize.STRING(200), allowNull: false },
@@ -21,11 +21,11 @@ module.exports = {
       updatedAt: { allowNull: false, type: Sequelize.DATE, defaultValue: Sequelize.fn('NOW') },
     });
 
-    await queryInterface.addIndex('BugReports', ['user_id']);
+    await queryInterface.addIndex('bugreports', ['user_id']);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('BugReports', ['user_id']);
-    await queryInterface.dropTable('BugReports');
+    await queryInterface.removeIndex('bugreports', ['user_id']);
+    await queryInterface.dropTable('bugreports');
   }
 };
