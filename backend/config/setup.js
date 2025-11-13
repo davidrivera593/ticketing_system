@@ -8,9 +8,23 @@ const FRONTEND_BUILD_PATH = path.join(__dirname, "../../frontend/build");
 
 module.exports = (app) => {
   // Setup CORS
+  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3001")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.use(
     cors({
-      origin: "*", // Can be customized for production 'https://helpdesk.asucapstonetools.com'
+      origin(origin, callback) {
+        // Allow requests without an Origin header (e.g. curl/postman)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      },
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true, // Enable this for sessions/auth
     })
