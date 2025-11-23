@@ -386,8 +386,8 @@ const AdminSettings = () => {
         >
           Teams Under development
         </Typography>
-        
-        <List 
+
+        <List
           sx={{
             maxHeight: "300px",
             overflowY: "auto",
@@ -432,9 +432,9 @@ const AdminSettings = () => {
             Add Team
           </Button>
         </Box>
-      
+
       </Box> */}
-      
+
       {/* Teaching Assistants Section */}
       {/*<Box*/}
       {/*  sx={{*/}
@@ -565,10 +565,10 @@ const AdminSettings = () => {
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            marginBottom: 2.5, 
+        <Typography
+          variant="h5"
+          sx={{
+            marginBottom: 2.5,
             fontWeight: "bold",
             color: theme.palette.text.primary
           }}
@@ -592,6 +592,14 @@ const AdminSettings = () => {
               >
                   Manage TAs
               </Button>
+
+              <Button
+                  variant="contained"
+                  onClick={() => navigate("/manageadmins")}
+                  sx={{ backgroundColor: theme.palette.primary.main }}
+              >
+                  Manage Admins
+              </Button>
           </Box>
       </Box>
 
@@ -607,10 +615,10 @@ const AdminSettings = () => {
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            marginBottom: 2.5, 
+        <Typography
+          variant="h5"
+          sx={{
+            marginBottom: 2.5,
             fontWeight: "bold",
             color: theme.palette.text.primary
           }}
@@ -630,8 +638,8 @@ const AdminSettings = () => {
       </Box>
 
       <Box sx={{ marginBottom: 1.25, display: "flex", justifyContent: "center", gap: 2 }}>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           onClick={() => navigate("/profile")}
           sx={{ backgroundColor: theme.palette.primary.main }}
         >

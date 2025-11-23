@@ -35,14 +35,10 @@ npx nodemon server.js
 
 - **config/:** Database configuration.
 - **models/:** Sequelize models (database tables).
+- **migrations/:** Database migrations (adding or modifying tables)
 - **routes/:** Express routes (API endpoints).
 - **server.js:** Main server file.
 
 ### 📝 Notes
 
 Ensure your MySQL database is set up correctly and the **.env** file has valid credentials. 
-
-### Email information  
-For the .env backend file 
-EMAIL_USER=support@helpdesk.asucapstonetools.com
-EMAIL_PASS=TempNotify123!

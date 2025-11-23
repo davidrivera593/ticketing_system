@@ -6,9 +6,6 @@
     "nodemailer": "^7.0.6"
   },
   "type": "module",
-  "scripts": {
-    "start": "node --env-file=.env test_update.mjs"
-  },
   "devDependencies": {
     "webpack-dev-server": "^5.2.1"
   }

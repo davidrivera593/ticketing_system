@@ -16,7 +16,7 @@ import ConfirmEscalate from "../../components/ConfirmEscalate/ConfirmEscalate";
 import ReplySection from "../../components/ReplySection/ReplySection";
 import ShareTicket from "../../components/ShareTicket/ShareTicket";
 import TicketStatusIndicator from "../../components/TicketStatusIndicator/TicketStatusIndicator";
-import { issueTypeDisplay } from "../../constants/IssueTypes";
+import { issueTypeDisplay, generateTicketNumber } from "../../constants/IssueTypes";
 import "./TicketInfo.css";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
@@ -342,7 +342,7 @@ const TicketInfo = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
-                  {userType === 'admin' || userType === 'TA' ? ticketId : 'ST' + String(ticketId).padStart(4, '0')}
+                  {userType === 'admin' || userType === 'TA' ? ticketId : generateTicketNumber(ticketData.issue_type, ticketId)}
                 </Typography>
                 <TicketStatusIndicator status={ticketStatus.toUpperCase() || "UNKNOWN"} />
                 {ticketData.escalated && <TicketStatusIndicator status={"ESCALATED"} />}

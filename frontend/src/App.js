@@ -33,6 +33,7 @@ import TaTicketInfo from "./pages/TicketInfo/TaTicketInfo";
 import BulkUpload from "./pages/BulkUpload/BulkUpload";
 import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
+import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
 
 function App() {
   return (
@@ -111,6 +112,33 @@ function App() {
             />
           }
         />
+          {/*Manage Users pages */}
+          <Route
+              path="/managestudents"
+              element ={
+              <ProtectedRoute
+              element={<ManageStudents />}
+              authorizedRoles={["admin"]}
+              />
+              }
+          />
+          <Route
+              path="/ManageTAs"
+              element={
+              <ProtectedRoute
+              element={<ManageTAs />}
+              authorizedRoles={["admin"]}
+              />
+              }
+          />
+          <Route
+              path="/manageadmins"
+              element={
+              <ProtectedRoute
+              element={<ManageAdmins />}
+              authorizedRoles={["admin"]}/>
+              }
+          />
 
         <Route path="/profile" element={<Profile />} />
       </Route>

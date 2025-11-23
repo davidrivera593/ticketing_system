@@ -1,7 +1,8 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs"); // Required for password change
-
-// github tracking 
+const StudentData = require("../models/StudentData");
+const Team = require("../models/Team");
+// github tracking
 
 exports.getAllUsers = async (req, res) => {
   try {
@@ -92,19 +93,74 @@ exports.deleteUser = async (req, res) => {
 };
 
 exports.getUsersByRole = async (req, res) => {
-  try {
-    const { role } = req.params;
-    const validRoles = ["student", "TA", "admin"];
+    try {
+        const { role } = req.params;
+        const validRoles = ["student", "TA", "admin"];
 
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ error: "Invalid role specified" });
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ error: "Invalid role specified" });
+        }
+
+        if (!User.associations.StudentData) {
+            User.hasOne(StudentData, { foreignKey: 'user_id' });
+            StudentData.belongsTo(User, { foreignKey: 'user_id' });
+        }
+
+        if (!StudentData.associations.Team) {
+            Team.hasMany(StudentData, { foreignKey: 'team_id' });
+            StudentData.belongsTo(Team, { foreignKey: 'team_id' });
+        }
+
+        let queryOptions = {
+            where: { role },
+            attributes: ['user_id', 'name', 'email', 'is_enabled'],
+        };
+
+        if (role === 'student') {
+            queryOptions.include = [
+                {
+                    model: StudentData,
+                    required: false,
+                    attributes: ['section'],
+                    include: [
+                        {
+                            model: Team,
+                            required: false,
+                            attributes: ['team_name', 'sponsor_name'],
+                        }
+                    ]
+                }
+            ];
+        }
+
+        const users = await User.findAll(queryOptions);
+
+        const flatUsers = users.map(user => {
+            const u = user.toJSON();
+
+            if (role === 'student') {
+                const sData = u.StudentData || u.StudentDatum || {};
+                const team = sData.Team || {};
+
+                return {
+                    user_id: u.user_id,
+                    name: u.name,
+                    email: u.email,
+                    is_enabled: u.is_enabled,
+                    section: sData.section || "N/A",
+                    sponsor: team.sponsor_name || "N/A",
+                    team_name: team.team_name || "N/A"
+                };
+            }
+            return u;
+        });
+
+        res.json(flatUsers);
+
+    } catch (error) {
+        console.error("Error in getUsersByRole:", error);
+        res.status(500).json({ error: error.message });
     }
-
-    const users = await User.findAll({ where: { role } });
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 };
 
 exports.getUserProfile = async (req, res) => {

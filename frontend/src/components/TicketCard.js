@@ -2,6 +2,7 @@ import { Avatar, Button, Chip, Typography, Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import React, { useState } from "react";
 import TicketView from "./TicketView/TicketView"; // Import TicketView component
+import { generateTicketNumber } from "../constants/IssueTypes";
 // minor change for git tracking
 function stringAvatar(name) {
   return {
@@ -43,14 +44,21 @@ const defaultProps = {
   status: "Ongoing",
   escalated: false,
   name: "No Name",
+  teamName: "No Team",
+  sponsorName: "No Sponsor",
+  createdAt: null,
 };
 
 const TicketCard = ({
   ticketId = defaultProps.ticketId,
+  issueType,
   issueDescription = defaultProps.issueDescription,
   status = defaultProps.status,
   escalated = defaultProps.escalated,
   name = defaultProps.name,
+  teamName = defaultProps.teamName,
+  sponsorName = defaultProps.sponsorName,
+  createdAt = defaultProps.createdAt,
 }) => {
   const theme = useTheme();
   const [showTicketView, setShowTicketView] = useState(false);
@@ -61,7 +69,18 @@ const TicketCard = ({
 
   const handleCloseTicketView = () => {
     setShowTicketView(false);
-  }; 
+  };
+
+  // Format the created date to exclude time
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
 
   const normalizedStatus = status ? status.toLowerCase() : "unknown";
   const isEscalated = escalated === true;
@@ -79,7 +98,7 @@ const TicketCard = ({
           flex: 1,
           gap: 1.25,
           width: "100%",
-          height: "300px",
+          height: "400px",
           overflow: "hidden",
           boxSizing: "border-box",
           border: 1,
@@ -106,12 +125,12 @@ const TicketCard = ({
               variant="body1"
               sx={{
                 fontSize: "1rem",
-                color: theme.palette.text.primary,
+                color: theme.palette.primary.main,
                 fontWeight: "bold",
                 textAlign: "right",
               }}
             >
-              {ticketId}
+              {generateTicketNumber(issueType, ticketId)}
             </Typography>
           </div>
         </div>
@@ -168,12 +187,39 @@ const TicketCard = ({
         )}
         </div>
 
-        {/* NAME */}
-        <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
-          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-            Name:
-          </Typography>
-          <Typography variant="body2">{name}</Typography>
+        {/* INFO SECTION - Grouped with tighter spacing */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {/* NAME */}
+          <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+            <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+              Name:
+            </Typography>
+            <Typography variant="body2">{name}</Typography>
+          </div>
+
+          {/* TEAM */}
+          <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+            <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+              Team:
+            </Typography>
+            <Typography variant="body2">{teamName || "No Team"}</Typography>
+          </div>
+
+          {/* SPONSOR */}
+          <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+            <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+              Sponsor:
+            </Typography>
+            <Typography variant="body2">{sponsorName || "No Sponsor"}</Typography>
+          </div>
+
+          {/* CREATED DATE */}
+          <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+            <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+              Created:
+            </Typography>
+            <Typography variant="body2">{formatDate(createdAt)}</Typography>
+          </div>
         </div>
 
         <Button
