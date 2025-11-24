@@ -33,11 +33,8 @@ import TaTicketInfo from "./pages/TicketInfo/TaTicketInfo";
 import BulkUpload from "./pages/BulkUpload/BulkUpload";
 import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
-<<<<<<< HEAD
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
-=======
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
->>>>>>> c994bba (more updates to the bug report page)
 
 function App() {
   return (
