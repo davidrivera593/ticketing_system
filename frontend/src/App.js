@@ -21,7 +21,6 @@ import TicketQueue from "./pages/TicketQueue/TicketQueue";
 import Unauthorized from "./pages/Unauthorized/Unauthorized";
 import Registration from "./pages/Registration/Registration";
 import Profile from "./pages/Profile/Profile";
-import StudentTickets from "./pages/StudentTickets/StudentTickets";
 import InstructorTickets from "./pages/InstructorTickets/InstructorTickets";
 import InstructorProfile from "./pages/InstructorProfile/InstructorProfile"; 
 import EscalatedTickets from "./pages/EscalatedTickets/EscalatedTickets";
