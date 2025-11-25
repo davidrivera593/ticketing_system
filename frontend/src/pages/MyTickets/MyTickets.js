@@ -66,8 +66,13 @@ export default function MyTickets() {
     try {
       setLoading(true);
       
-      const response = await fetchTicketsByUserId();
+      // Build filters for server-side filtering (only major filters that require server processing)
+      const filters = {};
+      if (hideResolved) {
+        filters.hideResolved = "true";
+      }
       
+      const response = await fetchTicketsByUserId(1, 1000, filters);
       
       // Handle both old format (array) and new format (object with pagination)
       const ticketsData = response.tickets || response;
@@ -84,11 +89,20 @@ export default function MyTickets() {
       );
 
       setAllTickets(enriched);
-      setCount(enriched.length);
+      setCount(enriched.length); // Use actual count, not server pagination count
+      
+      // Store for client-side pagination (like StudentDash pattern)
+      window.myTicketsAllData = enriched;
     } catch (e) {
       console.error("Error fetching tickets:", e);
       setAllTickets([]);
       setCount(0);
+      setPagination({
+        totalItems: 0,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false
+      });
     } finally {
       setLoading(false);
     }
@@ -96,11 +110,17 @@ export default function MyTickets() {
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [hideResolved]); // ✅ Only server calls for major filters
 
   useEffect(() => {
     applyFilters();
-  }, [allTickets, activeFilters, hideResolved, currentPage, itemsPerPage]);
+  }, [allTickets, activeFilters.search, activeFilters.teamNameSearch, activeFilters.sort, activeFilters.status, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (activeFilters.status && activeFilters.status.toLowerCase() === "resolved") {
+      setHideResolved(false);
+    }
+  }, [activeFilters.status]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -109,27 +129,7 @@ export default function MyTickets() {
   const applyFilters = () => {
     let filtered = [...allTickets];
 
-    if (activeFilters.sort === "newest") {
-      filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    } else if (activeFilters.sort === "oldest") {
-      filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    } else if (activeFilters.sort === "id-asc") {
-      filtered.sort((a, b) => a.ticket_id - b.ticket_id);
-    } else if (activeFilters.sort === "id-desc") {
-      filtered.sort((a, b) => b.ticket_id - a.ticket_id);
-    }
-
-    if (activeFilters.status) {
-      if (activeFilters.status.toLowerCase() === "escalated") {
-        filtered = filtered.filter((ticket) => ticket.escalated === true);
-      } else {
-        filtered = filtered.filter(
-          (ticket) =>
-            ticket.status?.toLowerCase() === activeFilters.status.toLowerCase()
-        );
-      }
-    }
-
+    // Apply client-side filters
     if (activeFilters.search) {
       filtered = filtered.filter((ticket) =>
         ticket.userName
@@ -146,12 +146,30 @@ export default function MyTickets() {
       );
     }
 
-    if (hideResolved) {
-      filtered = filtered.filter(
-        (ticket) => ticket.status?.toLowerCase() !== "resolved"
-      );
+    if (activeFilters.sort) {
+      if (activeFilters.sort === "newest") {
+        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      } else if (activeFilters.sort === "oldest") {
+        filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      } else if (activeFilters.sort === "id-asc") {
+        filtered.sort((a, b) => a.ticket_id - b.ticket_id);
+      } else if (activeFilters.sort === "id-desc") {
+        filtered.sort((a, b) => b.ticket_id - a.ticket_id);
+      }
     }
 
+    if (activeFilters.status) {
+      if (activeFilters.status.toLowerCase() === "escalated") {
+        filtered = filtered.filter((ticket) => ticket.escalated === true);
+      } else {
+        filtered = filtered.filter(
+          (ticket) =>
+            ticket.status?.toLowerCase() === activeFilters.status.toLowerCase()
+        );
+      }
+    }
+
+    // Apply client-side pagination
     const totalItems = filtered.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -333,21 +351,16 @@ export default function MyTickets() {
         />
         
         {/* Pagination Component */}
-        {pagination.totalPages > 1 && (
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-            <Pagination
-              currentPage={currentPage}
-              totalItems={pagination.totalItems}
-              itemsPerPage={itemsPerPage}
-              totalPages={pagination.totalPages}
-              hasNextPage={pagination.hasNextPage}
-              hasPreviousPage={pagination.hasPreviousPage}
-              onPageChange={handlePageChange}
-              onItemsPerPageChange={handleItemsPerPageChange}
-              itemsPerPageOptions={[5, 10, 25, 50]}
-            />
-          </Box>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={pagination.totalItems}
+          itemsPerPage={itemsPerPage}
+          totalPages={pagination.totalPages}
+          hasNextPage={pagination.hasNextPage}
+          hasPreviousPage={pagination.hasPreviousPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
 
         {/* No tickets message */}
         {tickets.length === 0 && !loading && (

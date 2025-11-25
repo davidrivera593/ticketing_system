@@ -60,6 +60,18 @@ export const fetchTicketsByUserId = async (page = 1, limit = 10, filters = {}) =
   return apiFetch(url);
 };
 
+// Fetch tickets assigned to current user (for instructors/TAs)
+export const fetchAssignedTickets = async (page = 1, limit = 10, filters = {}) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...filters
+  });
+  
+  const url = `${baseURL}/api/tickets/assigned-to-me?${params}`;
+  return apiFetch(url);
+};
+
 export const fetchTicketAssignmentsByUserId = async () => {
   const token = Cookies.get("token");
   if (!token) throw new Error("No token found");
@@ -193,4 +205,30 @@ export const fetchTaTicketsByUserId = async () => {
 
     const url = `${baseURL}/api/tatickets/user/${userId}`;
     return apiFetch(url);
+};
+
+// Check if current user can edit a specific ticket based on assignments
+export const canUserEditTicket = async (ticketId) => {
+  try {
+    const token = Cookies.get("token");
+    if (!token) return false;
+
+    const decodedToken = jwtDecode(token);
+    
+    // Admins can always edit
+    if (decodedToken.role === "admin") {
+      return true;
+    }
+    
+    // For TAs, check if they are assigned to the ticket
+    if (decodedToken.role === "TA") {
+      const assignments = await fetchTicketAssignmentsByUserId();
+      return assignments.some(assignment => assignment.ticket_id === parseInt(ticketId));
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error checking ticket edit permissions:", error);
+    return false;
+  }
 };

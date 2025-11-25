@@ -21,7 +21,6 @@ import TicketQueue from "./pages/TicketQueue/TicketQueue";
 import Unauthorized from "./pages/Unauthorized/Unauthorized";
 import Registration from "./pages/Registration/Registration";
 import Profile from "./pages/Profile/Profile";
-import StudentTickets from "./pages/StudentTickets/StudentTickets";
 import InstructorTickets from "./pages/InstructorTickets/InstructorTickets";
 import InstructorProfile from "./pages/InstructorProfile/InstructorProfile"; 
 import EscalatedTickets from "./pages/EscalatedTickets/EscalatedTickets";
@@ -79,7 +78,7 @@ function App() {
         {/* Testing Pages */}
 
         {/* Change user_id to the user's id */}
-        <Route path="/mytickets" element={<StudentTickets />} />
+        <Route path="/mytickets" element={<MyTickets />} />
         <Route path="/instructortickets" element={<InstructorTickets />} />
         <Route path="/TaRequestTickets" element={<TaRequestTickets />} />
         <Route path="/ta-info" element={<TAinfo />} />

@@ -81,6 +81,51 @@ isAdmin: (req, res, next) => {
       res.status(403).json({ error: "Forbidden: Cannot view this profile" });
     }
   },
+  isAssignedToTicket: async (req, res, next) => {
+    try {
+      const TicketAssignment = require("../models/TicketAssignment");
+      const Ticket = require("../models/Ticket");
+      const ticketId = req.params.ticket_id;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      
+      // Admins can always edit tickets
+      if (userRole === "admin") {
+        return next();
+      }
+      
+      // Students can edit tickets they created
+      if (userRole === "student") {
+        const ticket = await Ticket.findOne({
+          where: { ticket_id: ticketId, student_id: userId }
+        });
+        
+        if (ticket) {
+          return next();
+        } else {
+          return res.status(403).json({ error: "Forbidden: You can only edit tickets you created" });
+        }
+      }
+      
+      // TAs can edit tickets they are assigned to
+      if (userRole === "TA") {
+        const assignment = await TicketAssignment.findOne({
+          where: { ticket_id: ticketId, user_id: userId }
+        });
+        
+        if (assignment) {
+          return next();
+        } else {
+          return res.status(403).json({ error: "Forbidden: You are not assigned to this ticket" });
+        }
+      }
+      
+      res.status(403).json({ error: "Forbidden: Access denied" });
+    } catch (error) {
+      console.error("Error checking ticket assignment:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
 };
 
 module.exports = authMiddleware;

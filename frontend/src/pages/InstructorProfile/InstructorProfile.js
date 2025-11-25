@@ -424,73 +424,191 @@ const InstructorProfile = () => {
     const requestedUserId = userId;
     try {
       const token = Cookies.get("token");
-      const response = await fetch(`${baseURL}/api/ticketassignments/users/${requestedUserId}`, {
-        method: "GET",
-        headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error("Failed to fetch Ticket Assignment details");
-    }
+      const decodedToken = jwtDecode(token);
+      
+      // Check if current user is viewing their own profile
+      const isViewingOwnProfile = decodedToken.id.toString() === requestedUserId;
+      
+      if (isViewingOwnProfile && decodedToken.role === 'TA') {
+        // Use new streamlined endpoint for instructors viewing their own tickets
+        const response = await fetch(`${baseURL}/api/tickets/assigned-to-me?page=1&limit=1000`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch assigned tickets");
+        }
 
-    const ticketsAssigned = await response.json();
-    if (latestUserIdRef.current !== requestedUserId) {
-      return;
-    }
-    setTATickets(ticketsAssigned);
-    // get ticket_ids from the ticketsAssigned data
-    const ticketIds = ticketsAssigned.map((assignment) => assignment.ticket_id);
+        const data = await response.json();
+        if (latestUserIdRef.current !== requestedUserId) {
+          return;
+        }
+        
+        const ticketsWithNames = await Promise.all(
+          data.tickets.map(async (ticket) => {
+            const teamName = await fetchTeamNameFromId(ticket.team_id);
+            return { 
+              ...ticket, 
+              userName: ticket.student ? ticket.student.name : "Unknown Student",
+              teamName 
+            };
+          })
+        );
+        
+        setAllTickets(ticketsWithNames);
+        setTotalTickets(data.summary.totalTickets);
+        setEscalatedTickets(data.summary.escalatedTickets);
+        setOpenTickets(data.summary.openTickets);
+        setClosedTickets(data.summary.closedTickets);
+        
+        // Set empty TA tickets array since we're using the new endpoint
+        setTATickets([]);
+        
+      } else if (decodedToken.role === 'TA') {
+        // TA viewing another TA's profile - only show shared tickets
+        const [otherTAResponse, myAssignmentsResponse] = await Promise.all([
+          fetch(`${baseURL}/api/ticketassignments/users/${requestedUserId}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${baseURL}/api/ticketassignments/users/${decodedToken.id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        ]);
+        
+        if (!otherTAResponse.ok || !myAssignmentsResponse.ok) {
+          throw new Error("Failed to fetch assignment details");
+        }
 
-    // api requests to fetch details for each ticket
-    const ticketDetailsPromises = ticketIds.map((ticketId) => fetchTicketDetails(ticketId));
+        const [otherTAAssignments, myAssignments] = await Promise.all([
+          otherTAResponse.json(),
+          myAssignmentsResponse.json()
+        ]);
+        
+        if (latestUserIdRef.current !== requestedUserId) {
+          return;
+        }
+        
+        // Find shared ticket IDs
+        const myTicketIds = myAssignments.map(a => a.ticket_id);
+        const sharedTicketIds = otherTAAssignments
+          .filter(a => myTicketIds.includes(a.ticket_id))
+          .map(a => a.ticket_id);
+        
+        // Get shared ticket details
+        const ticketDetailsPromises = sharedTicketIds.map((ticketId) => fetchTicketDetails(ticketId));
+        const ticketDetails = await Promise.all(ticketDetailsPromises);
+        const validTicketDetails = ticketDetails.filter(Boolean);
+        let uniqueTickets = [...new Map(validTicketDetails.map((ticket) => [ticket.ticket_id, ticket])).values()];
+        
+        // Set the filtered assignments for shared tickets only
+        const sharedAssignments = otherTAAssignments.filter(a => sharedTicketIds.includes(a.ticket_id));
+        setTATickets(sharedAssignments);
+        
+        const ticketsWithNames = await Promise.all(
+          uniqueTickets.map(async (ticket) => {
+            const userName = await fetchNameFromId(ticket.student_id);
+            const teamName = await fetchTeamNameFromId(ticket.team_id);
+            return { ...ticket, userName, teamName };
+          })
+        );
+        
+        if (latestUserIdRef.current !== requestedUserId) {
+          return;
+        }
+        
+        setAllTickets(ticketsWithNames);
+        setTotalTickets(uniqueTickets.length);
+        
+        // Calculate statistics for shared tickets
+        const escalatedCount = ticketsWithNames.filter(ticket => ticket.escalated === true).length;
+        const openCount = ticketsWithNames.filter(ticket => 
+          ticket.status === 'new' || ticket.status === 'ongoing'
+        ).length;
+        const closedCount = ticketsWithNames.filter(ticket => ticket.status === 'resolved').length;
 
-    const ticketDetails = await Promise.all(ticketDetailsPromises);
-    const validTicketDetails = ticketDetails.filter(Boolean);
-    let uniqueTickets = [...new Map(validTicketDetails.map((ticket) => [ticket.ticket_id, ticket])).values()];
-    //console.log("unique tickets:", ticketIds);
-    
-    // Filter tickets based on user role - students only see their own tickets
-    const decodedToken = jwtDecode(token);
-    if (decodedToken.role === 'student') {
-      uniqueTickets = uniqueTickets.filter(ticket => ticket.student_id === decodedToken.id);
-    }
-    
-    const ticketsWithNames = await Promise.all(
-        uniqueTickets.map(async (ticket) => {
-          const userName = await fetchNameFromId(ticket.student_id);
-          const teamName = await fetchTeamNameFromId(ticket.team_id);
-          return { ...ticket, userName, teamName };
-        })
-      );
+        setEscalatedTickets(escalatedCount);
+        setOpenTickets(openCount);
+        setClosedTickets(closedCount);
+        
+      } else {
+        // Use existing logic for admins, students, or other roles viewing TAs' profiles
+        const response = await fetch(`${baseURL}/api/ticketassignments/users/${requestedUserId}`, {
+          method: "GET",
+          headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch Ticket Assignment details");
+      }
+
+      const ticketsAssigned = await response.json();
       if (latestUserIdRef.current !== requestedUserId) {
         return;
       }
-      setAllTickets(ticketsWithNames);
-      setTotalTickets(uniqueTickets.length);
-    
-    //  Add ticket statistics
-    const escalatedCount = ticketsWithNames.filter(ticket => ticket.escalated === true).length;
-    const openCount = ticketsWithNames.filter(ticket => 
-      ticket.status === 'new' || ticket.status === 'ongoing'
-    ).length;
-    const closedCount = ticketsWithNames.filter(ticket => ticket.status === 'resolved').length;
+      setTATickets(ticketsAssigned);
+      // get ticket_ids from the ticketsAssigned data
+      const ticketIds = ticketsAssigned.map((assignment) => assignment.ticket_id);
 
-    setEscalatedTickets(escalatedCount);
-    setOpenTickets(openCount);
-    setClosedTickets(closedCount);
-    
-    setLoading(false);
-  } catch (error) {
-      if (latestUserIdRef.current !== requestedUserId) {
-        return;
+      // api requests to fetch details for each ticket
+      const ticketDetailsPromises = ticketIds.map((ticketId) => fetchTicketDetails(ticketId));
+
+      const ticketDetails = await Promise.all(ticketDetailsPromises);
+      const validTicketDetails = ticketDetails.filter(Boolean);
+      let uniqueTickets = [...new Map(validTicketDetails.map((ticket) => [ticket.ticket_id, ticket])).values()];
+      
+      // Filter tickets based on user role - students only see their own tickets
+      if (decodedToken.role === 'student') {
+        uniqueTickets = uniqueTickets.filter(ticket => ticket.student_id === decodedToken.id);
       }
-      console.error("Error fetching Ticket Assignment details:", error);
+      
+      const ticketsWithNames = await Promise.all(
+          uniqueTickets.map(async (ticket) => {
+            const userName = await fetchNameFromId(ticket.student_id);
+            const teamName = await fetchTeamNameFromId(ticket.team_id);
+            return { ...ticket, userName, teamName };
+          })
+        );
+        if (latestUserIdRef.current !== requestedUserId) {
+          return;
+        }
+        setAllTickets(ticketsWithNames);
+        setTotalTickets(uniqueTickets.length);
+      
+      const escalatedCount = ticketsWithNames.filter(ticket => ticket.escalated === true).length;
+      const openCount = ticketsWithNames.filter(ticket => 
+        ticket.status === 'new' || ticket.status === 'ongoing'
+      ).length;
+      const closedCount = ticketsWithNames.filter(ticket => ticket.status === 'resolved').length;
+
+      setEscalatedTickets(escalatedCount);
+      setOpenTickets(openCount);
+      setClosedTickets(closedCount);
+      }
+      
       setLoading(false);
-    }
-  };
+    } catch (error) {
+        if (latestUserIdRef.current !== requestedUserId) {
+          return;
+        }
+        console.error("Error fetching Ticket Assignment details:", error);
+        setLoading(false);
+      }
+    };
   
   if (loading) {
     return (
