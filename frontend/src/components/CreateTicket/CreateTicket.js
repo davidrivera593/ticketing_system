@@ -10,27 +10,26 @@ import { useTheme } from "@mui/material/styles";
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 const CreateTicket = ({ onClose }) => {
-    const theme = useTheme();
-  const [studentName, setStudentName] = useState("");
+  const theme = useTheme();
+  const [studentName, setStudentName] = useState(Cookies.get("name") || "N/A");
+  const user_id = Cookies.get("user_id") || "";
   const [teamName, setTeamName] = useState("");
+  const [team_id, setTeamID] = useState("");
   const [sponsorName, setSponsorName] = useState("");
   const [section, setSection] = useState("");
   const [instructorName, setInstructorName] = useState("");
+  const [instructor_user_id, setInstructorID] = useState(null);
   const [issueType, setIssueType] = useState("");
   const [description, setDescription] = useState("");
-  const [taList, setTaList] = useState([]); // Initialize as empty array
-  const [teamList, setTeamList] = useState([]); // Initialize as empty array for teams
-  // const [asuId, setAsuId] = useState(""); 
+
   useEffect(() => {
-    fetchTAs();
-    fetchTeams();
+    fetchStudentData(user_id);
   }, []);
 
-  // Fetch TA users from the API
-  const fetchTAs = async () => {
+  const fetchStudentData = async (user_id) => {
     try {
       const token = Cookies.get("token");
-      const response = await fetch(`${baseURL}/api/users/role/TA`, {
+      const response = await fetch(`${baseURL}/api/studentdata/studentdata-with-team/${user_id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -38,31 +37,21 @@ const CreateTicket = ({ onClose }) => {
         },
       });
       const data = await response.json();
-      setTaList(Array.isArray(data) ? data : []);
+      console.log("Fetched student data with team:", data);
+
+      setSection(data.section || "");
+      setTeamName(data.team_name || "");
+      setTeamID(data.team_id || "");
+      setSponsorName(data.sponsor_name || "");  
+      setInstructorName(data.instructor_name || "");
+      setInstructorID(data.instructor_user_id || null);
+      
     } catch (error) {
-      console.error("Failed to fetch TAs:", error);
-      setTaList([]); // Fallback to empty array
+      console.error("Failed to fetch student data:", error);
+      setStudentName("N/A");
     }
   };
 
-  // Fetch Teams from the API
-  const fetchTeams = async () => {
-    try {
-      const token = Cookies.get("token");
-      const response = await fetch(`${baseURL}/api/teams`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      setTeamList(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch teams:", error);
-      setTeamList([]); // Fallback to empty array
-    }
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -78,6 +67,8 @@ const CreateTicket = ({ onClose }) => {
       // asuId,
     };
 
+    console.log("Submitted Data:", submittedData);
+
     try {
       const token = Cookies.get("token");
       const id = Cookies.get("user_id");
@@ -90,7 +81,7 @@ const CreateTicket = ({ onClose }) => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          team_id: teamName, // Use the team ID selected from the dropdown
+          team_id: team_id, // Use the team ID selected from the dropdown
           student_id: id,
           sponsor_name: submittedData.sponsorName,
           section: submittedData.section,
@@ -117,7 +108,7 @@ const CreateTicket = ({ onClose }) => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            user_id: submittedData.instructorName, // TA ID
+            user_id: instructor_user_id, // TA ID
           }),
         }
       );
@@ -210,7 +201,7 @@ const CreateTicket = ({ onClose }) => {
               Create New Ticket
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
+              {/* <TextField
                   label="Student Name"
                   variant="outlined"
                   placeholder="Enter your name"
@@ -218,7 +209,16 @@ const CreateTicket = ({ onClose }) => {
                   onChange={(e) => setStudentName(e.target.value)}
                   required
                   fullWidth
+              /> */}
+              <TextField
+                  label="Your Name"
+                  variant="outlined"
+                  value={studentName}
+                  required
+                  fullWidth
+                  disabled
               />
+
           {/* <label>ASU ID:</label>
           <input
             type="text"
@@ -228,7 +228,7 @@ const CreateTicket = ({ onClose }) => {
             required
             maxLength={10}
           /> */}
-              <TextField
+              {/* <TextField
                   label="Section"
                   variant="outlined"
                   placeholder="Enter your section"
@@ -237,7 +237,17 @@ const CreateTicket = ({ onClose }) => {
                   required
                   fullWidth
               />
-              <FormControl fullWidth required>
+              */}
+              <TextField
+                  label="Your Section"
+                  variant="outlined"
+                  placeholder="N/A"
+                  value={section}
+                  required
+                  fullWidth
+                  disabled
+              />
+              {/* <FormControl fullWidth required>
                   <InputLabel>Team</InputLabel>
                   <Select
                       value={teamName}
@@ -251,8 +261,17 @@ const CreateTicket = ({ onClose }) => {
                           </MenuItem>
                       ))}
                   </Select>
-              </FormControl>
-              <TextField
+              </FormControl> */}
+               <TextField
+                  label="Your Team"
+                  variant="outlined"
+                  placeholder="N/A"
+                  value={teamName}
+                  required
+                  fullWidth
+                  disabled
+              />
+              {/* <TextField
                   label="Sponsor Name"
                   variant="outlined"
                   placeholder="Enter your Sponsor's name"
@@ -260,8 +279,17 @@ const CreateTicket = ({ onClose }) => {
                   onChange={(e) => setSponsorName(e.target.value)}
                   required
                   fullWidth
+              /> */}
+               <TextField
+                  label="Sponsor Name"
+                  variant="outlined"
+                  placeholder="N/A"
+                  value={sponsorName}
+                  required
+                  fullWidth
+                  disabled
               />
-              <FormControl fullWidth required>
+              {/* <FormControl fullWidth required>
                   <InputLabel>Instructor (TA)</InputLabel>
                   <Select
                       value={instructorName}
@@ -276,6 +304,17 @@ const CreateTicket = ({ onClose }) => {
                       ))}
                   </Select>
               </FormControl>
+              */}
+              <TextField
+                  label="Instructor (TA)"
+                  variant="outlined"
+                  placeholder="N/A"
+                  value={instructorName}
+                  required
+                  fullWidth
+                  disabled
+              />
+
               <FormControl fullWidth required>
                   <InputLabel>Issue Type</InputLabel>
                   <Select
