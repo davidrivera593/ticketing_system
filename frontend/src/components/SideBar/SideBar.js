@@ -17,7 +17,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ASULogo from "../../assets/ASULogo.png";
 import CreateTicket from "../CreateTicket/CreateTicket";
-import InstructorCreateTicket from "../CreateTicket/InstructorCreateTicket";
 import BugReportIcon from "@mui/icons-material/BugReport";
 import "./SideBar.css";
 
@@ -228,8 +227,13 @@ const SideBar = () => {
             zIndex: 1000,
           }}
         >
-            {userType === "student" && <CreateTicket onClose={closeModal} />}
-            {userType === "TA" && <InstructorCreateTicket onClose={closeModal} />}
+
+            {(userType === "student" || userType === "TA") && (
+                <CreateTicket
+                    onClose={closeModal}
+                    forcedRole={userType === "student" ? "student" : "TA"}
+                />
+            )}
         </div>
       )}
 

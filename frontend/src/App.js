@@ -49,17 +49,6 @@ function App() {
       <Route path="/registration" element={<Registration />} />
       <Route path="/resetpassword" element={<ResetPassword />} />
       <Route path="/requestreset" element={<RequestReset />} />
-      
-      {/* Change password - protected but without navbar (forced flow) */}
-      <Route 
-        path="/change-password" 
-        element={
-          <ProtectedRoute
-            element={<ChangePassword />}
-            authorizedRoles={["admin", "student", "TA", "grader"]}
-          />
-        } 
-      />
 
       {/*Verify that user is logged in before rendering any of these routes*/}
       <Route
@@ -70,116 +59,60 @@ function App() {
           />
         }
       >
-        <Route path="/ticketinfo" element={<TicketInfo />} />
-        <Route path="/ticketsubmit" element={<TicketSubmit />} />
-        <Route path="/ticketqueue" element={<TicketQueue />} />
-        <Route path="/alltickets" element={<AllTickets />} />
-        <Route path="/allassignees" element={<AllAssignees />} />
-        <Route path="/adminsettings" element={<AdminSettings />} />
-        <Route path="/bug-report" element={<BugReportPage />} />
-        <Route path="/managestudents" element={<ManageStudents />} />
-        <Route path="/bulkupload" element={<BulkUpload />} />
-        <Route path="/ManageTAs" element={<ManageTAs />} />
-        <Route path="/ManageGraders" element={<ManageGraders />} />
-        <Route path="/tasettings" element={<TASettings />} />
-        <Route path="/studentsettings" element={<StudentSettings />} />
-        <Route path="/gradersettings" element={<GraderSettings />} />
-        <Route path="/ticketview" element={<TicketView />} />
-	      <Route path="/instructorprofile" element={<InstructorProfile />} />
-          <Route path="/taticketview" element={<TaTicketView />} />
-          <Route path="/taticketinfo" element={<TaTicketInfo />} />
-        <Route 
-          path="/escalatedtickets" 
-          element={<ProtectedRoute
-            element={<EscalatedTickets />}
-            authorizedRoles={["admin"]}
-           />
-          } 
-        />
-        {/* Testing Pages */}
+          {/* --- Shared Pages--- */}
+          <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
+              <Route path="/change-password" element={<ChangePassword />} />
+              <Route path="/allassignees" element={<AllAssignees />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/ta-info" element={<TAinfo />} />
+              <Route path="/ticketview" element={<TicketView />} />
+              <Route path="/ticketinfo" element={<TicketInfo />} />
+              <Route path="/instructorprofile" element={<InstructorProfile />} />
+              <Route path="/mytickets" element={<MyTickets />} />
+              <Route path="/bug-report" element={<BugReportPage />} />
+          </Route>
 
-        {/* Change user_id to the user's id */}
-        <Route path="/mytickets" element={<MyTickets />} />
-        <Route path="/instructortickets" element={<InstructorTickets />} />
-        <Route path="/TaRequestTickets" element={<TaRequestTickets />} />
-        <Route path="/ta-info" element={<TAinfo />} />
-        <Route path="/gradertickets" element={<GraderTickets />} />
+          <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
+              <Route path="/ticketsubmit" element={<TicketSubmit />} />
+              <Route path="/ticketqueue" element={<TicketQueue />} />
+              <Route path="/taticketinfo" element={<TaTicketInfo />} />
+              <Route path="/taticketview" element={<TaTicketView />} />
+          </Route>
 
-        {/*Verify the correct user type for dashboards*/}
-        <Route
-          path="/admindash"
-          element={
-            <ProtectedRoute
-              element={<AdminDash />}
-              authorizedRoles={["admin"]}
-            />
-          }
-        />
-        <Route
-          path="/studentdash"
-          element={
-            <ProtectedRoute
-              element={<StudentDash />}
-              authorizedRoles={["student"]}
-            />
-          }
-        />
-        <Route
-          path="/instructordash"
-          element={
-            <ProtectedRoute
-              element={<InstructorDash />}
-              authorizedRoles={["TA"]}
-            />
-          }
-        />
-          <Route
-              path="/graderdash"
-              element={
-                  <ProtectedRoute
-                      element={<GraderDash />}
-                      authorizedRoles={["grader"]}
-                  />
-              }
-          />
-          {/*Manage Users pages */}
-          <Route
-              path="/managestudents"
-              element ={
-              <ProtectedRoute
-              element={<ManageStudents />}
-              authorizedRoles={["admin"]}
-              />
-              }
-          />
-          <Route
-              path="/ManageTAs"
-              element={
-              <ProtectedRoute
-              element={<ManageTAs />}
-              authorizedRoles={["admin"]}
-              />
-              }
-          />
-          <Route
-              path="/manageadmins"
-              element={
-              <ProtectedRoute
-              element={<ManageAdmins />}
-              authorizedRoles={["admin"]}/>
-              }
-          />
+          {/* --- Admin Pages--- */}
+          <Route element={<ProtectedRoute authorizedRoles={["admin"]} />}>
+              <Route path="/admindash" element={<AdminDash />} />
+              <Route path="/adminsettings" element={<AdminSettings />} />
+              <Route path="/managestudents" element={<ManageStudents />} />
+              <Route path="/manageadmins" element={<ManageAdmins />} />
+              <Route path="/manageTAs" element={<ManageTAs />} />
+              <Route path="/manageGraders" element={<ManageGraders />} />
+              <Route path="/bulkupload" element={<BulkUpload />} />
+              <Route path="/escalatedtickets" element={<EscalatedTickets />} />
+              <Route path="/alltickets" element={<AllTickets />} />
+          </Route>
 
-          <Route
-              path="/manageGraders"
-              element={
-              <ProtectedRoute
-              element={<ManageGraders />}
-              authorizedRoles={["admin"]}/>
-              }
-          />
+          {/* --- Student Pages--- */}
+          <Route element={<ProtectedRoute authorizedRoles={["student"]} />}>
+              <Route path="/studentdash" element={<StudentDash />} />
+              <Route path="/studentsettings" element={<StudentSettings />} />
+          </Route>
 
-        <Route path="/profile" element={<Profile />} />
+          {/* --- TAs Pages--- */}
+          <Route element={<ProtectedRoute authorizedRoles={["TA"]} />}>
+              <Route path="/instructordash" element={<InstructorDash />} />
+              <Route path="/tasettings" element={<TASettings />} />
+              <Route path="/instructortickets" element={<InstructorTickets />} />
+              <Route path="/TaRequestTickets" element={<TaRequestTickets />} />
+          </Route>
+
+          {/* --- Grader Pages--- */}
+          <Route element={<ProtectedRoute authorizedRoles={["grader"]} />}>
+              <Route path="/gradersettings" element={<GraderSettings />} />
+              <Route path="/graderdash" element={<GraderDash />} />
+              <Route path="/gradertickets" element={<GraderTickets />} />
+          </Route>
+
       </Route>
 
       {/*Default to login page for unrecognized routes*/}
