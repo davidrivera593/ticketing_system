@@ -10,6 +10,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useNavigate } from "react-router-dom";
 import './ResetPassword.css';
+import { passwordRequirementsText, validatePassword } from "../../utils/passwordValidator";
 
 const ResetPassword = () => {
   let navigate = useNavigate();  
@@ -25,6 +26,22 @@ const ResetPassword = () => {
   const changePassword = async (event) => {
     try {
       event.preventDefault();
+      const nextPassword = event.target.password.value;
+      if (!nextPassword) {
+        setPasswordError(true);
+        setPasswordErrorMessage("Password is required.");
+        return;
+      }
+
+      const passwordCheck = validatePassword(nextPassword);
+      if (!passwordCheck.valid) {
+        setPasswordError(true);
+        setPasswordErrorMessage(passwordCheck.errors.join(" "));
+        return;
+      }
+
+      setPasswordError(false);
+      setPasswordErrorMessage("");
 
       const response = await fetch(`${baseURL}/api/password-reset-tokens/validate`, {
         method: "POST",
@@ -33,16 +50,20 @@ const ResetPassword = () => {
         },
         body: JSON.stringify({
           token: new URLSearchParams(window.location.search).get("token"),
-          password: event.target.password.value,
+          password: nextPassword,
         }),
       });
 
       if (!response.ok) {
         console.log(response.statusText);
-        console.log(response.json())
+        const errorData = await response.json();
         setPasswordError(true);
-        const msg = "Token Invalid or Expired";
-        setPasswordErrorMessage(msg);
+        if (errorData?.error === "Password policy violation" && Array.isArray(errorData?.details)) {
+          setPasswordErrorMessage(errorData.details.join(" "));
+        } else {
+          const msg = "Token Invalid or Expired";
+          setPasswordErrorMessage(msg);
+        }
         return;
       } else {
         setPasswordError(false);
@@ -73,7 +94,7 @@ const ResetPassword = () => {
             </Box>
             <TextField
               error={passwordError}
-              helperText={passwordErrorMessage}
+              helperText={passwordErrorMessage || passwordRequirementsText}
               name="password"
               placeholder="••••••"
               type={showPass ? "text" : "password"}

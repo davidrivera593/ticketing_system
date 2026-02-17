@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const sendEmail = require("../services/emailService");
+const { validatePassword } = require("../utils/passwordValidator");
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -44,6 +45,14 @@ exports.register = async (req, res) => {
   // }
 
   try {
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) {
+      return res.status(400).json({
+        error: "Password policy violation",
+        details: passwordCheck.errors,
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [user, created] = await User.findOrCreate({
