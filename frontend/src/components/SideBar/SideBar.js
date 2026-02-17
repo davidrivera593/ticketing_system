@@ -237,44 +237,44 @@ const SideBar = () => {
         </div>
       )}
 
-      <List className="settingsAndLogOut">
-         <ListItemButton
-          className="buttonStyle"
-          selected={selectedPage === 7}
-          onClick={() => { setSelectedPage(7); navigate("/bug-report"); }}
-      >
-        <ListItemIcon><BugReportIcon className="iconStyle" /></ListItemIcon>
-        <ListItemText className="fontStyle" primary="Report a Bug" />
-      </ListItemButton>
-      <ListItemButton
-          className="buttonStyle"
-          onClick={() => {
-            setSelectedPage(4);
-            if (userType === "admin") {
-              navigate("/adminsettings");
-            } else if (userType === "TA") {
-              navigate("/tasettings");
-            } else if (userType === "student") {
-              navigate("/studentsettings");
-            } else if (userType === "grader") {
-                navigate("/gradersettings");
-            }
+      {/*<List className="settingsAndLogOut">*/}
+      {/*   <ListItemButton*/}
+      {/*    className="buttonStyle"*/}
+      {/*    selected={selectedPage === 7}*/}
+      {/*    onClick={() => { setSelectedPage(7); navigate("/bug-report"); }}*/}
+      {/*>*/}
+      {/*  <ListItemIcon><BugReportIcon className="iconStyle" /></ListItemIcon>*/}
+      {/*  <ListItemText className="fontStyle" primary="Report a Bug" />*/}
+      {/*</ListItemButton>*/}
+      {/*<ListItemButton*/}
+      {/*    className="buttonStyle"*/}
+      {/*    onClick={() => {*/}
+      {/*      setSelectedPage(4);*/}
+      {/*      if (userType === "admin") {*/}
+      {/*        navigate("/adminsettings");*/}
+      {/*      } else if (userType === "TA") {*/}
+      {/*        navigate("/tasettings");*/}
+      {/*      } else if (userType === "student") {*/}
+      {/*        navigate("/studentsettings");*/}
+      {/*      } else if (userType === "grader") {*/}
+      {/*          navigate("/gradersettings");*/}
+      {/*      }*/}
 
-          }}
-          selected={selectedPage === 4}
-        >
-          <ListItemIcon>
-            <SettingsIcon className="iconStyle" />
-          </ListItemIcon>
-          <ListItemText className="fontStyle" primary="Settings" />
-        </ListItemButton>
-        <ListItemButton className="buttonStyle" onClick={handleLogout}>
-          <ListItemIcon>
-            <LogoutIcon className="iconStyle" />
-          </ListItemIcon>
-          <ListItemText className="fontStyle" primary="Log Out" />
-        </ListItemButton>
-      </List>
+      {/*    }}*/}
+      {/*    selected={selectedPage === 4}*/}
+      {/*  >*/}
+      {/*    <ListItemIcon>*/}
+      {/*      <SettingsIcon className="iconStyle" />*/}
+      {/*    </ListItemIcon>*/}
+      {/*    <ListItemText className="fontStyle" primary="Settings" />*/}
+      {/*  </ListItemButton>*/}
+      {/*  <ListItemButton className="buttonStyle" onClick={handleLogout}>*/}
+      {/*    <ListItemIcon>*/}
+      {/*      <LogoutIcon className="iconStyle" />*/}
+      {/*    </ListItemIcon>*/}
+      {/*    <ListItemText className="fontStyle" primary="Log Out" />*/}
+      {/*  </ListItemButton>*/}
+      {/*</List>*/}
     </Drawer>
   );
 };
