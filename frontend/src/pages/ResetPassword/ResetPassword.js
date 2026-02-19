@@ -55,7 +55,6 @@ const ResetPassword = () => {
       });
 
       if (!response.ok) {
-        console.log(response.statusText);
         const errorData = await response.json();
         setPasswordError(true);
         if (errorData?.error === "Password policy violation" && Array.isArray(errorData?.details)) {
