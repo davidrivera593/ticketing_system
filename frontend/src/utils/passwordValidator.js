@@ -14,6 +14,10 @@ export const validatePassword = (password) => {
     return { valid: false, errors: ["Password must be a string."] };
   }
 
+  const trimmedPassword = password.trim();
+  if (trimmedPassword !== password) {
+    errors.push("Password must not start or end with whitespace.");
+  }
   if (password.length < MIN_LENGTH) {
     errors.push(`Password must be at least ${MIN_LENGTH} characters.`);
   }
