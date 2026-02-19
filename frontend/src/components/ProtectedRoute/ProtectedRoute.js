@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Navigate } from 'react-router-dom';
+import { Route, Navigate, Outlet } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { jwtDecode } from "jwt-decode";
 
@@ -27,9 +27,9 @@ const ProtectedRoute = ({ element, authorizedRoles }) => {
 
     if (!authorizedRoles.includes(userType)) { // incorrect user type
         return <Navigate to="/unauthorized" replace />; 
-    } 
+    }
 
-    return element
+    return element ? element : <Outlet />;
 };
 
 export default ProtectedRoute;
