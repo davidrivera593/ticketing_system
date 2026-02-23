@@ -120,7 +120,19 @@ const notifyRegularTicketEscalationChanged = async ({
     return;
   }
 
-  const recipients = await getRegularTicketRecipients(ticket, actorUserId);
+  let recipients = await getRegularTicketRecipients(ticket, actorUserId);
+
+  if (isEscalated) {
+    const admins = await User.findAll({
+      where: { role: "admin" },
+      attributes: ["user_id", "name", "email", "notifications_enabled"],
+    });
+
+    recipients = getUniqueNotifiableRecipients(
+      [...recipients, ...admins],
+      actorUserId
+    );
+  }
   const subject = isEscalated
     ? `Ticket #${ticket.ticket_id} escalated`
     : `Ticket #${ticket.ticket_id} de-escalated`;
