@@ -1,8 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-const User = require("./User"); // Import User model
-
 const Ticket = sequelize.define(
   "Ticket",
   {
@@ -72,9 +70,6 @@ const Ticket = sequelize.define(
     updatedAt: 'updated_at',
   }
 );
-
-// Define Association
-Ticket.belongsTo(User, { foreignKey: "student_id", as: "student" });
 
 module.exports = Ticket;
 

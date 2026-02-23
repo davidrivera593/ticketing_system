@@ -1,361 +1,228 @@
 import Cookies from "js-cookie";
 import React, { useEffect, useState } from "react";
-import "./CreateTicket.css";
-
-//In order to have the buttons have a ripple effect, this page has to be rebuilt with mui
-//mui by default does the ripple effect
-import { Box, Button, Typography, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import {
+    Box, Button, Typography, TextField, FormControl,
+    InputLabel, Select, MenuItem, Grid2 as Grid, CircularProgress
+} from '@mui/material';
 import { useTheme } from "@mui/material/styles";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 const CreateTicket = ({ onClose }) => {
     const theme = useTheme();
-  const [studentName, setStudentName] = useState("");
-  const [teamName, setTeamName] = useState("");
-  const [sponsorName, setSponsorName] = useState("");
-  const [section, setSection] = useState("");
-  const [instructorName, setInstructorName] = useState("");
-  const [issueType, setIssueType] = useState("");
-  const [description, setDescription] = useState("");
-  const [taList, setTaList] = useState([]); // Initialize as empty array
-  const [teamList, setTeamList] = useState([]); // Initialize as empty array for teams
-  const [graderList, setGraderList] = useState([]);
 
-    const [teamId, setTeamId] = useState("");
-  // const [asuId, setAsuId] = useState("");
-  useEffect(() => {
-      fetchUsersByRole("TA", setTaList);
-      fetchUsersByRole("grader", setGraderList);
-      fetchTeams();
-      autoFillStudentData();
-  }, []);
+    // Auth Data
+    const token = Cookies.get("token");
+    const userId = Cookies.get("user_id");
+    const userName = Cookies.get("name") || "";
 
-    // Fetches all students and picks the current one
-    const autoFillStudentData = async () => {
+    // State for Role Detection
+    const [isStudent, setIsStudent] = useState(null); // null until check is complete
+
+    // Form & Data State
+    const [issueType, setIssueType] = useState("");
+    const [description, setDescription] = useState("");
+    const [instructorId, setInstructorId] = useState("");
+    const [selectedTeamId, setSelectedTeamId] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    // Data Lists
+    const [studentData, setStudentData] = useState({ section: "", sponsor: "" });
+    const [teamList, setTeamList] = useState([]);
+    const [taList, setTaList] = useState([]);
+    const [graderList, setGraderList] = useState([]);
+
+    useEffect(() => {
+        determineRoleAndLoadData();
+    }, []);
+
+    const determineRoleAndLoadData = async () => {
         try {
-            const token = Cookies.get("token");
-            const currentUserId = Cookies.get("user_id"); // Ensure this cookie exists
-
-            const response = await fetch(`${baseURL}/api/users/role/student`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+            // 1. Fetch all students to see if current user is among them
+            const studentRes = await fetch(`${baseURL}/api/users/role/student`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
+            const students = await studentRes.json();
 
-            if (!response.ok) throw new Error("Failed to fetch student profile");
-
-            const students = await response.json();
-
-            // Find the student matching the current logged-in ID
-            const me = students.find(s => String(s.user_id) === String(currentUserId));
+            const me = students.find(s => String(s.user_id) === String(userId));
 
             if (me) {
-                setStudentName(me.name || "");
-                setSection(me.section || "");
-                setSponsorName(me.sponsor || "");
-                // Important: teamName state in your code stores the team_id
-                setTeamName(me.team_name || "");
+                // USER IS A STUDENT
+                setIsStudent(true);
+                setStudentData({ section: me.section || "", sponsor: me.sponsor || "" });
+
+                // Load student-specific requirements
+                fetchTeams();
+                fetchUsersByRole("TA", setTaList);
+                fetchUsersByRole("grader", setGraderList);
+            } else {
+                // USER IS STAFF (TA/Instructor)
+                setIsStudent(false);
             }
         } catch (error) {
-            console.error("Auto-fill failed:", error);
+            console.error("Role detection failed:", error);
+            setIsStudent(false); // Fallback to staff view or error state
         }
+    };
+
+    const fetchTeams = async () => {
+        const res = await fetch(`${baseURL}/api/teams`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setTeamList(Array.isArray(data) ? data : []);
     };
 
     const fetchUsersByRole = async (role, setter) => {
+        const res = await fetch(`${baseURL}/api/users/role/${role}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setter(Array.isArray(data) ? data : []);
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setLoading(true);
+
         try {
-            const token = Cookies.get("token");
-            const response = await fetch(`${baseURL}/api/users/role/${role}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+            const endpoint = isStudent ? `${baseURL}/api/tickets` : `${baseURL}/api/tatickets`;
+            const payload = isStudent ? {
+                team_id: selectedTeamId,
+                student_id: userId,
+                sponsor_name: studentData.sponsor,
+                section: studentData.section,
+                issue_type: issueType,
+                issue_description: description,
+            } : {
+                ta_id: userId,
+                issue_type: issueType,
+                issue_description: description,
+            };
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify(payload),
             });
-            const data = await response.json();
-            setter(Array.isArray(data) ? data : []);
+
+            if (!response.ok) throw new Error("Failed to create ticket.");
+            const ticket = await response.json();
+
+            // Step 2: Student Assignment logic
+            if (isStudent && instructorId) {
+                await fetch(`${baseURL}/api/ticketassignments/ticket/${ticket.ticket_id}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ user_id: instructorId }),
+                });
+            }
+
+            alert("Ticket submitted successfully!");
+            onClose();
+            window.location.reload();
         } catch (error) {
-            console.error(`Failed to fetch ${role}s:`, error);
-            setter([]);
+            alert(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
-  // Fetch Teams from the API
-  const fetchTeams = async () => {
-    try {
-      const token = Cookies.get("token");
-      const response = await fetch(`${baseURL}/api/teams`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      setTeamList(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch teams:", error);
-      setTeamList([]); // Fallback to empty array
+    // Prevent rendering the form until we know the role
+    if (isStudent === null) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
     }
-  };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+    return (
+        <Box sx={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            bgcolor: 'rgba(0, 0, 0, 0.4)', display: 'flex', justifyContent: 'center',
+            alignItems: 'center', zIndex: 1000
+        }}>
+            <Box sx={{
+                bgcolor: theme.palette.background.paper, p: 4, borderRadius: 2,
+                width: '95%', maxWidth: 600, position: 'relative', boxShadow: 24
+            }}>
+                <Button onClick={onClose} sx={{ position: "absolute", top: 10, right: 10, minWidth: "30px", color: "#8C1D40", fontSize: '20px' }}>&times;</Button>
 
-    const submittedData = {
-      studentName,
-      teamName,
-      sponsorName,
-      section,
-      instructorName,
-      issueType,
-      description,
-      // asuId,
-    };
+                <Typography variant="h5" sx={{ mb: 3, fontWeight: 700, textAlign: 'center', color: '#8C1D40' }}>
+                    {isStudent ? "New Student Ticket" : "New Staff/TA Ticket"}
+                </Typography>
 
-    try {
-      const token = Cookies.get("token");
-      const id = Cookies.get("user_id");
+                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-      // Step 2: Create the ticket
-      const ticketResponse = await fetch(`${baseURL}/api/tickets`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          team_id: teamName, // Use the team ID selected from the dropdown
-          student_id: id,
-          sponsor_name: submittedData.sponsorName,
-          section: submittedData.section,
-          issue_type: submittedData.issueType,
-          issue_description: submittedData.description,
-          // asu_id: submittedData.asuId,
+                    <Grid container spacing={2}>
+                        <Grid size={isStudent ? 4 : 12}>
+                            <TextField label="Name" variant="filled" size="small" value={userName} fullWidth InputProps={{ readOnly: true }} />
+                        </Grid>
+                        {isStudent && (
+                            <>
+                                <Grid size={4}><TextField label="Section" variant="filled" size="small" value={studentData.section} fullWidth InputProps={{ readOnly: true }} /></Grid>
+                                <Grid size={4}><TextField label="Sponsor" variant="filled" size="small" value={studentData.sponsor} fullWidth InputProps={{ readOnly: true }} /></Grid>
+                            </>
+                        )}
+                    </Grid>
 
-        }),
-      });
+                    {isStudent && (
+                        <FormControl fullWidth required>
+                            <InputLabel>Team Name</InputLabel>
+                            <Select value={selectedTeamId} label="Team Name" onChange={(e) => setSelectedTeamId(e.target.value)}>
+                                {teamList.map((t) => <MenuItem key={t.team_id} value={t.team_id}>{t.team_name}</MenuItem>)}
+                            </Select>
+                        </FormControl>
+                    )}
 
-      if (!ticketResponse.ok) {
-        throw new Error("Failed to create ticket.");
-      }
+                    <FormControl fullWidth required>
+                        <InputLabel>Issue Type</InputLabel>
+                        <Select value={issueType} label="Issue Type" onChange={(e) => { setIssueType(e.target.value); setInstructorId(""); }}>
+                            <MenuItem value="sponsorIssue">Issues communicating with the Sponsor</MenuItem>
+                            <MenuItem value="sponsorWorkingIssue">Issues working with the Sponsor</MenuItem>
+                            <MenuItem value="teamIssue">Issues within the Team</MenuItem>
+                            <MenuItem value="teamMemberIssue">Issues with a team mate</MenuItem>
+                            <MenuItem value="gradeAppeal">Appeal to an assignment grade </MenuItem>
+                            <MenuItem value="extensionRequest">Request an extension for an assignment</MenuItem>
+                            <MenuItem value="accommodationRequest">Request an accommodation for the course</MenuItem>
+                            <MenuItem value="generalQuestion">General questions about the course</MenuItem>
+                            <MenuItem value="Feature Request">Feature Request</MenuItem>
+                            <MenuItem value="Question">Question about this system</MenuItem>
+                            <MenuItem value="other">Other</MenuItem>
+                        </Select>
+                    </FormControl>
 
-      const ticket = await ticketResponse.json();
+                    {isStudent && (
+                        <FormControl fullWidth required>
+                            <InputLabel>{issueType === "gradeAppeal" ? "Assigned Grader" : "Assigned TA"}</InputLabel>
+                            <Select
+                                value={instructorId}
+                                label={issueType === "gradeAppeal" ? "Assigned Grader" : "Assigned TA"}
+                                onChange={(e) => setInstructorId(e.target.value)}
+                                disabled={!issueType}
+                            >
+                                {(issueType === "gradeAppeal" ? graderList : taList).map((staff) => (
+                                    <MenuItem key={staff.user_id} value={staff.user_id}>{staff.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
 
-      // Step 3: Assign the TA to the ticket
-      const assignResponse = await fetch(
-        `${baseURL}/api/ticketassignments/ticket/${ticket.ticket_id}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            user_id: submittedData.instructorName, // TA ID
-          }),
-        }
-      );
+                    <TextField
+                        label="Description" required fullWidth multiline rows={4}
+                        value={description} onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Please provide as much detail as possible..."
+                    />
 
-      if (!assignResponse.ok) {
-        throw new Error("Failed to assign ticket to TA.");
-      }
-
-      const a = await assignResponse.json();
-      alert("Ticket submitted successfully!");
-      console.log("Ticket created:", ticket);
-      console.log("Assignment", a);
-
-      // Reset the form
-      setStudentName("");
-      setTeamName("");
-      setSponsorName("");
-      setSection("");
-      setInstructorName("");
-      setIssueType("");
-      setDescription("");
-      // setAsuId("");
-
-      if (onClose) onClose(); // Close modal if `onClose` is provided
-      window.location.reload();
-    } catch (error) {
-      console.error("Error creating ticket:", error);
-      alert(error.message || "An error occurred while submitting the ticket.");
-    }
-  };
-
-  //Robert: All buttons below have been updated with '<Button/>' in order to have a ripple effect when the button is clicked
-  return (
-    <Box className="modal-overlay"
-         sx={{
-             position: 'fixed',
-             top: 0,
-             left: 0,
-             width: '100vw',
-             height: '100vh',
-             bgcolor: 'rgba(0, 0, 0, 0.5)',
-             display: 'flex',
-             justifyContent: 'center',
-             alignItems: 'center',
-             Index: 1000,
-             pl: '250px',
-             pt: '50px',
-         }}
-    >
-      <Box className="modal-content"
-           sx={{
-               bgcolor: theme.palette.background.paper,
-               p: 3,
-               borderRadius: 2.5,
-               width: '90%',
-               maxWidth: 600,
-               position: 'relative',
-               boxShadow: 3,
-               mt: -6.25,
-           }}
-      >
-        {/* Close button */}
-        <Button
-          className="close-button"
-          onClick={onClose}
-          sx={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            minWidth: "32px",
-            minHeight: "32px",
-            borderRadius: "50%",
-            backgroundColor: "#8C1D40",
-            color: "white",
-            "&:hover": {
-              backgroundColor: "#5F0E24",
-            },
-          }}
-        >
-          &times;
-        </Button>
-
-        {/* Form Content */}
-          <Typography variant="h4" sx={{
-              mb: 2,
-              fontWeight: 'bold',
-              textAlign: 'center',
-              color: theme.palette.text.primary
-          }}>
-              Create New Ticket
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                  label="Student Name"
-                  variant="outlined"
-                  value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                  fullWidth
-                  disabled
-              />
-          {/* <label>ASU ID:</label>
-          <input
-            type="text"
-            placeholder="10-digit ASU ID"
-            value={asuId}
-            onChange={(e) => setAsuId(e.target.value)}
-            required
-            maxLength={10}
-          /> */}
-              <TextField
-                  label="Section"
-                  variant="outlined"
-                  value={section}
-                  onChange={(e) => setSection(e.target.value)}
-                  fullWidth
-                  disabled
-              />
-              <FormControl fullWidth required>
-                  <InputLabel>Team</InputLabel>
-                  <Select
-                      value={teamName}
-                      label="Team"
-                      placeholder="Select a team"
-                      onChange={(e) => setTeamName(e.target.value)}
-                  >
-                      {teamList.map((team) => (
-                          <MenuItem key={team.team_id} value={team.team_id}>
-                              {team.team_name}
-                          </MenuItem>
-                      ))}
-                  </Select>
-              </FormControl>
-              <TextField
-                  label="Sponsor Name"
-                  variant="outlined"
-                  value={sponsorName}
-                  onChange={(e) => setSponsorName(e.target.value)}
-                  fullWidth
-                  disabled
-              />
-              <FormControl fullWidth required>
-                  <InputLabel>Issue Type</InputLabel>
-                  <Select
-                      value={issueType}
-                      label="Issue Type"
-                      placeholder="Select a issue type"
-                      onChange={(e) => setIssueType(e.target.value)}
-                  >
-                      <MenuItem value="sponsorIssue">Issues communicating with the Sponsor</MenuItem>
-                      <MenuItem value="sponsorWorkingIssue">Issues working with the Sponsor</MenuItem>
-                      <MenuItem value="teamIssue">Issues within the Team</MenuItem>
-                      <MenuItem value="teamMemberIssue">Issues with a team mate</MenuItem>
-                      <MenuItem value="gradeAppeal">Appeal to an assignment grade </MenuItem>
-                      <MenuItem value="extensionRequest">Request an extension for an assignment</MenuItem>
-                      <MenuItem value="accommodationRequest">Request an accommodation for the course</MenuItem>
-                      <MenuItem value="generalQuestion">General questions about the course</MenuItem>
-                      <MenuItem value="Feature Request">Feature Request</MenuItem>
-                      <MenuItem value="Question">Question about this system</MenuItem>
-                      <MenuItem value="other">Other</MenuItem>
-                  </Select>
-              </FormControl>
-              <FormControl fullWidth required>
-                  <InputLabel>
-                      {issueType === "gradeAppeal" ? "Assigned Grader" : "Assigned TA"}
-                  </InputLabel>
-                  <Select
-                      value={instructorName}
-                      label={issueType === "gradeAppeal" ? "Assigned Grader" : "Assigned TA"}
-                      onChange={(e) => setInstructorName(e.target.value)}
-                      disabled={!issueType} // Disable until an issue type is picked
-                  >
-                      {issueType === "gradeAppeal"
-                          ? graderList.map((grader) => (
-                              <MenuItem key={grader.user_id} value={grader.user_id}>
-                                  {grader.name} (Grader)
-                              </MenuItem>
-                          ))
-                          : taList.map((ta) => (
-                              <MenuItem key={ta.user_id} value={ta.user_id}>
-                                  {ta.name} (TA)
-                              </MenuItem>
-                          ))
-                      }
-                  </Select>
-              </FormControl>
-              <TextField
-                  label="Description"
-                  variant="outlined"
-                  placeholder="Describe your issue"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                  fullWidth
-                  multiline
-                  rows={6}
-              />
-          <Button type="submit">Submit Ticket</Button>
+                    <Button type="submit" variant="contained" disabled={loading}
+                            sx={{ py: 1.5, bgcolor: "#8C1D40", fontWeight: 'bold', "&:hover": { bgcolor: "#5F0E24" } }}>
+                        {loading ? <CircularProgress size={24} color="inherit" /> : "Submit Ticket"}
+                    </Button>
+                </Box>
+            </Box>
         </Box>
-      </Box>
-    </Box>
-  );
+    );
 };
 
 export default CreateTicket;

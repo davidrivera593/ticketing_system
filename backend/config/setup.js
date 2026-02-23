@@ -8,7 +8,10 @@ const FRONTEND_BUILD_PATH = path.join(__dirname, "../../frontend/build");
 
 module.exports = (app) => {
   // Setup CORS
-  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3001")
+  const allowedOrigins = (
+    process.env.CORS_ORIGINS ||
+    "http://localhost:3001, https://helpdesk.asucapstonetools.com"
+  )
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
