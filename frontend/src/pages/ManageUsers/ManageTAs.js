@@ -469,6 +469,11 @@ const ManageTAs = () => {
                         exclusive
                         onChange={handleFilterChange}
                         aria-label="Filter TA status"
+                        sx={{
+                            '& .MuiToggleButton-root.Mui-selected': {
+                                color: '#fff',
+                            },
+                        }}
                     >
                         <ToggleButton value="all">All</ToggleButton>
                         <ToggleButton value="enabled">Enabled</ToggleButton>
