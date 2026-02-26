@@ -27,7 +27,9 @@ const REQUIRED_HEADERS_PROJECT = [
   "sponsor", 
   "sponsor_email", 
   "instructor", 
-  "instructor_email"
+  "instructor_email",
+  "grader",
+  "grader_email"
 ];
 
 const SCHEMA_PROJECT = {
@@ -35,7 +37,9 @@ const SCHEMA_PROJECT = {
     sponsor: "string",
     sponsor_email: "string",
     instructor: "string",
-    instructor_email: "string"
+    instructor_email: "string",
+    grader: "string",
+    grader_email: "string",
 };
 
 const validateCell = (key, value, SCHEMA) => {

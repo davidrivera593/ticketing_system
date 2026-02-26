@@ -4,6 +4,7 @@ const sendEmail = require("../services/emailService");
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+const { validatePassword } = require("../utils/passwordValidator");
 
 exports.requestPasswordReset = async (req, res) => {
     const { email } = req.body;
@@ -48,6 +49,14 @@ exports.validatePasswordResetToken = async (req, res) => {
         return res.status(400).json({ error: "Token and password are required." });
     }
     try {
+        const passwordCheck = validatePassword(password);
+        if (!passwordCheck.valid) {
+            return res.status(400).json({
+                error: "Password policy violation",
+                details: passwordCheck.errors,
+            });
+        }
+
         const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
         const resetToken = await PasswordResetToken.findOne({ 
             where: { 

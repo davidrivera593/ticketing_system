@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs"); // Required for password change
 const StudentData = require("../models/StudentData");
 const Team = require("../models/Team");
+const { validatePassword } = require("../utils/passwordValidator");
 // github tracking
 
 exports.getAllUsers = async (req, res) => {
@@ -95,7 +96,7 @@ exports.deleteUser = async (req, res) => {
 exports.getUsersByRole = async (req, res) => {
     try {
         const { role } = req.params;
-        const validRoles = ["student", "TA", "admin"];
+        const validRoles = ["student", "TA", "admin", "grader"];
 
         if (!validRoles.includes(role)) {
             return res.status(400).json({ error: "Invalid role specified" });
@@ -203,6 +204,14 @@ exports.changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: "Both current and new passwords are required" });
+    }
+
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.valid) {
+      return res.status(400).json({
+        error: "Password policy violation",
+        details: passwordCheck.errors,
+      });
     }
 
     const user = await User.findByPk(userId);

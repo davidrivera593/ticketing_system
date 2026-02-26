@@ -25,6 +25,8 @@ function DownloadTemplate({ ftype }) {
         { label: "sponsor email", key: "sponsor email" },
         { label: "instructor", key: "instructor" },
         { label: "instructor email", key: "instructor email" },
+        { label: "grader", key: "grader" },
+        { label: "grader email", key: "grader email" },
       ],
     };
     const headers = headermap[ftype];
@@ -48,7 +50,10 @@ function DownloadTemplate({ ftype }) {
           "sponsor email": "sponsor1@gmail.com", 
           instructor: "instructor1", 
           "instructor email":
-          "instructor@asu.edu" }, 
+          "instructor@asu.edu",
+          grader: "Grader1",
+          "grader email":
+          "grader1@asu.edu",},
       ]
     };
     const data = datamap[ftype];

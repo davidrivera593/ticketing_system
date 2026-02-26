@@ -13,6 +13,7 @@ import { verifyFileService } from "../../services/bulkUploadServices/verifyFile"
 import { generateTAs } from "../../services/bulkUploadServices/createTaUsers";
 import { generateTeams } from "../../services/bulkUploadServices/createTeams";
 import { generateStudentUsers } from "../../services/bulkUploadServices/createStudentUsers";
+import { generateGraders } from "../../services/bulkUploadServices/createGraderUsers";
 import { useTheme } from "@mui/material/styles";
 import {useNavigate} from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -94,6 +95,12 @@ const BulkUpload = () => {
             if (!genStudentResult.valid) {
                 console.error("User creation failed:", genStudentResult.errors);
                 alert("Student user creation errors:\n" + genStudentResult.errors.join("\n"));
+                return;
+            }
+            const genGraderResult = await generateGraders(projectFile);
+            if (!genGraderResult.valid) {
+                console.error("Grader creation failed:", genGraderResult.errors);
+                alert("Grader creation errors:\n" + genGraderResult.errors.join("\n"));
                 return;
             }
             

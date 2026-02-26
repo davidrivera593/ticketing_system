@@ -600,6 +600,14 @@ const AdminSettings = () => {
               >
                   Manage Admins
               </Button>
+
+              <Button
+                  variant="contained"
+                  onClick={() => navigate("/manageGraders")}
+                  sx={{ backgroundColor: theme.palette.primary.main }}
+              >
+                  Manage Graders
+              </Button>
           </Box>
       </Box>
 

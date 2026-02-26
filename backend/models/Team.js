@@ -23,6 +23,14 @@ const Team = sequelize.define("Team", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  grader_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+  },
+  grader_email: {
+      type: DataTypes.STRING,
+      allowNull: true,
+  }
 },{
   tableName: 'teams', // Ensure the table name is lowercase
   timestamps: false,

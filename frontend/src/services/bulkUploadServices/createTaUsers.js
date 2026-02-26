@@ -8,7 +8,9 @@ const REQUIRED_HEADERS = [
   "sponsor", 
   "sponsor_email", 
   "instructor", 
-  "instructor_email"
+  "instructor_email",
+  "grader",
+  "grader_email"
 ]; 
 
 const addTA  = async (name, email, password) => { 
@@ -24,7 +26,8 @@ const addTA  = async (name, email, password) => {
         name: name,
         email: email,
         password: password,
-        role: "TA",  
+        role: "TA",
+        must_change_password: true
       }),
     });
 

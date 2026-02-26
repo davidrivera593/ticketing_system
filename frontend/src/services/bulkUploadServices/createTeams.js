@@ -7,7 +7,9 @@ const REQUIRED_HEADERS = [
   "sponsor", 
   "sponsor_email", 
   "instructor", 
-  "instructor_email"
+  "instructor_email",
+  "grader",
+  "grader_email"
 ]; 
 
 const getTaIDByEmail = async (email) => {
@@ -35,7 +37,7 @@ const getTaIDByEmail = async (email) => {
     }
 };
 
-const addTeam = async (project, sponsor, sponsor_email, taID) => { 
+const addTeam = async (project, sponsor, sponsor_email, taID, grader, grader_email) => {
     try {
         const token = Cookies.get("token");
         const response = await fetch(`${baseURL}/api/teams/`, {
@@ -49,6 +51,8 @@ const addTeam = async (project, sponsor, sponsor_email, taID) => {
             instructor_user_id: taID,
             sponsor_name: sponsor,
             sponsor_email: sponsor_email,
+            grader_name: grader,
+            grader_email: grader_email,
           }),
         });
 
@@ -83,12 +87,14 @@ const createTeams = async (row) => {
     const team_name = userData.project;
     const sponsor_name = userData.sponsor;
     const sponsor_email = userData.sponsor_email;
+    const grader_name = userData.grader;
+    const grader_email = userData.grader_email;
     const taID = await getTaIDByEmail(userData.instructor_email);
     if (!taID.success) {
         return { success: false, error: `Could not find TA with email ${userData.instructor_email}: ${taID.error}` };
     }
 
-    const result = await addTeam(team_name, sponsor_name, sponsor_email, taID.data);
+    const result = await addTeam(team_name, sponsor_name, sponsor_email, taID.data, grader_name, grader_email);
     return result;
 };
 

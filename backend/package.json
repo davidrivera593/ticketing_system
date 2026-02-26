@@ -22,6 +22,7 @@
     "Faker": "^0.7.2",
     "fs": "^0.0.1-security",
     "isomorphic-fetch": "^3.0.0",
+    "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.3",
     "node-fetch": "^3.3.2",

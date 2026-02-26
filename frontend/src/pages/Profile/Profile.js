@@ -4,6 +4,7 @@ import { TextField, Button, Typography, Box } from '@mui/material';
 import { useTheme } from "@mui/material/styles";
 import Cookies from "js-cookie";
 import Avatar from '@mui/material/Avatar';
+import { validatePassword, passwordRequirementsText } from "../../utils/passwordValidator";
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 function Profile() {
@@ -106,6 +107,12 @@ function Profile() {
       alert("Please fill in both fields.");
       return;
     }
+
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.valid) {
+      alert(passwordCheck.errors.join(" ") || passwordRequirementsText);
+      return;
+    }
     try {
       const response = await fetch(`${baseURL}/api/users/change-password`, {
         method: "PUT",
@@ -118,6 +125,9 @@ function Profile() {
   
       if (!response.ok) {
         const errorData = await response.json();
+        if (errorData?.error === "Password policy violation" && Array.isArray(errorData?.details)) {
+          throw new Error(errorData.details.join(" "));
+        }
         throw new Error(errorData.error || `Failed to change password. Status ${response.status}`);
       }
   

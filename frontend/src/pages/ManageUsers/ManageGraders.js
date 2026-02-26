@@ -29,11 +29,11 @@ import { useNavigate } from "react-router-dom";
 import ConfirmTADelete from "../../components/ConfirmTADelete/ConfirmTADelete";
 import {generateRandomPassword} from "../../services/generateRandomPass";
 
-const ManageTAs = () => {
+const ManageGraders = () => {
     // Master list of all TAs from API
-    const [tas, setTas] = useState([]);
+    const [graders, setGraders] = useState([]);
     // The list of TAs to display after filtering
-    const [filteredTas, setFilteredTas] = useState([]);
+    const [filteredGraders, setFilteredGraders] = useState([]);
     // The current filter state
     const [filterStatus, setFilterStatus] = useState("all");
     const [isLoading, setIsLoading] = useState(true);
@@ -43,35 +43,35 @@ const ManageTAs = () => {
 
     // State for delete modal
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [selectedTA, setSelectedTA] = useState(null);
+    const [selectedGrader, setSelectedGrader] = useState(null);
     const [idNameMap, setIdToNameMap] = useState({});
     const [deleteStatus, setDeleteStatus] = useState(false);
 
     // Add state for new TA inputs
-    const [newTAName, setNewTAName] = useState("");
-    const [newTAEmail, setNewTAEmail] = useState("");
+    const [newGraderName, setNewGraderName] = useState("");
+    const [newGraderEmail, setNewGraderEmail] = useState("");
 
     // Add new state for selection and action menu
-    const [selectedTAs, setSelectedTAs] = useState([]);
+    const [selectedGraders, setSelectedGraders] = useState([]);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
 
     // Add deleteStatus to dependency array to refresh list
     useEffect(() => {
-        fetchTas();
+        fetchGraders();
     }, [deleteStatus]);
 
     // This useEffect runs whenever the master list or the filter changes
     useEffect(() => {
-        let list = tas; // Start with the full list
+        let list = graders; // Start with the full list
 
         if (filterStatus === "enabled") {
-            list = tas.filter((t) => t.is_enabled ?? true);
+            list = graders.filter((t) => t.is_enabled ?? true);
         } else if (filterStatus === "disabled") {
-            list = tas.filter((t) => !(t.is_enabled ?? true));
+            list = graders.filter((t) => !(t.is_enabled ?? true));
         }
 
-        setFilteredTas(list);
-    }, [tas, filterStatus]);
+        setFilteredGraders(list);
+    }, [graders, filterStatus]);
 
     // Helper function to create ID-to-Name map
     const convertToMap = (list) => {
@@ -82,11 +82,11 @@ const ManageTAs = () => {
         }, {});
     };
 
-    const fetchTas = async () => {
+    const fetchGraders = async () => {
         setIsLoading(true);
         try {
             const response = await fetch(
-                `${process.env.REACT_APP_API_BASE_URL}/api/users/role/TA`,
+                `${process.env.REACT_APP_API_BASE_URL}/api/users/role/grader`,
                 {
                     method: "GET",
                     headers: {
@@ -96,33 +96,33 @@ const ManageTAs = () => {
                 }
             );
 
-            if (!response.ok) throw new Error("Failed to fetch TAs.");
+            if (!response.ok) throw new Error("Failed to fetch Graders.");
             const data = await response.json();
-            setTas(data); // Set the master TA list
+            setGraders(data); // Set the master TA list
 
             // Create the map for the delete modal
             const idToNameMap = convertToMap(data);
             setIdToNameMap(idToNameMap);
         } catch (error) {
-            console.error("Failed to load TAs:", error);
+            console.error("Failed to load Graders:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleToggleEnabled = async (ta) => {
-        const currentValue = ta.is_enabled ?? true;
+    const handleToggleEnabled = async (grader) => {
+        const currentValue = grader.is_enabled ?? true;
         const newValue = !currentValue;
 
-        setTas((currentTas) =>
+        setGraders((currentTas) =>
             currentTas.map((t) =>
-                t.user_id === ta.user_id ? { ...t, is_enabled: newValue } : t
+                t.user_id === grader.user_id ? { ...t, is_enabled: newValue } : t
             )
         );
 
         try {
             const response = await fetch(
-                `${process.env.REACT_APP_API_BASE_URL}/api/users/${ta.user_id}`,
+                `${process.env.REACT_APP_API_BASE_URL}/api/users/${grader.user_id}`,
                 {
                     method: "PUT",
                     headers: {
@@ -137,15 +137,15 @@ const ManageTAs = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || "Failed to update TA status.");
+                throw new Error(errorData.message || "Failed to update Grader status.");
             }
         } catch (err) {
-            console.error("Error updating TA status:", err);
+            console.error("Error updating Grader status:", err);
             alert(`Error: ${err.message}. Reverting change.`);
 
-            setTas((currentTas) =>
-                currentTas.map((t) =>
-                    t.user_id === ta.user_id
+            setGraders((currentGraders) =>
+                currentGraders.map((t) =>
+                    t.user_id === grader.user_id
                         ? { ...t, is_enabled: currentValue }
                         : t
                 )
@@ -176,17 +176,17 @@ const ManageTAs = () => {
         }
     }
 
-    const addTA = async () => {
-        if (!newTAName.trim()) { //validation check
-            alert("TA name cannot be blank.");
+    const addGrader = async () => {
+        if (!newGraderName.trim()) { //validation check
+            alert("Grader name cannot be blank.");
             return;
         }
-        if (!newTAEmail.trim()) { //validation check
-            alert("TA Email name cannot be blank.");
+        if (!newGraderEmail.trim()) { //validation check
+            alert("Grader Email name cannot be blank.");
             return;
         }
 
-        const defaultPassword = generateRandomPassword(); // Encrypt the default password
+        const defaultPassword = generateRandomPassword();  // Encrypt the default password
         try {
             const response = await fetch(
                 `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
@@ -197,19 +197,19 @@ const ManageTAs = () => {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        name: newTAName,
-                        email: newTAEmail,
-                        role: "TA",
+                        name: newGraderName,
+                        email: newGraderEmail,
+                        role: "grader",
                         password: defaultPassword, // Default password
                         must_change_password: true
                     }),
                 }
             );
 
-            if (!response.ok) throw new Error("Failed to add TA.");
-            setNewTAName("");
-            setNewTAEmail("");
-            fetchTas(); // Refresh the list of TAs
+            if (!response.ok) throw new Error("Failed to add Grader.");
+            setNewGraderName("");
+            setNewGraderEmail("");
+            fetchGraders(); // Refresh the list of TAs
         } catch (error) {
             console.error(error);
         }
@@ -223,19 +223,19 @@ const ManageTAs = () => {
     const handleFilterChange = (event, newStatus) => {
         if (newStatus !== null) {
             setFilterStatus(newStatus);
-            setSelectedTAs([]);
+            setSelectedGraders([]);
         }
     };
 
     // Handlers for the delete modal
     const handleDelete = (ta) => {
-        setSelectedTA(ta);
+        setSelectedGrader(ta);
         setDeleteOpen(true);
     };
 
     const deletePopupClose = () => {
         setDeleteOpen(false);
-        setSelectedTA(null); // Clear the selected TA
+        setSelectedGrader(null); // Clear the selected TA
     };
 
     const updateStatus = (status) => {
@@ -246,37 +246,37 @@ const ManageTAs = () => {
     const handleSelectAll = (event) => {
         if (event.target.checked) {
             // Select all IDs from the *filtered* list
-            const newSelecteds = filteredTas.map((t) => t.user_id);
-            setSelectedTAs(newSelecteds);
+            const newSelecteds = filteredGraders.map((t) => t.user_id);
+            setSelectedGraders(newSelecteds);
             return;
         }
-        setSelectedTAs([]);
+        setSelectedGraders([]);
     };
 
     const handleSelectOne = (event, id) => {
-        const selectedIndex = selectedTAs.indexOf(id);
+        const selectedIndex = selectedGraders.indexOf(id);
         let newSelected = [];
 
         if (selectedIndex === -1) {
             // Not in array, add it
-            newSelected = newSelected.concat(selectedTAs, id);
+            newSelected = newSelected.concat(selectedGraders, id);
         } else if (selectedIndex === 0) {
             // At the start, remove
-            newSelected = newSelected.concat(selectedTAs.slice(1));
-        } else if (selectedIndex === selectedTAs.length - 1) {
+            newSelected = newSelected.concat(selectedGraders.slice(1));
+        } else if (selectedIndex === selectedGraders.length - 1) {
             // At the end, remove
-            newSelected = newSelected.concat(selectedTAs.slice(0, -1));
+            newSelected = newSelected.concat(selectedGraders.slice(0, -1));
         } else if (selectedIndex > 0) {
             // In the middle, remove
             newSelected = newSelected.concat(
-                selectedTAs.slice(0, selectedIndex),
-                selectedTAs.slice(selectedIndex + 1)
+                selectedGraders.slice(0, selectedIndex),
+                selectedGraders.slice(selectedIndex + 1)
             );
         }
-        setSelectedTAs(newSelected);
+        setSelectedGraders(newSelected);
     };
 
-    const isSelected = (id) => selectedTAs.indexOf(id) !== -1;
+    const isSelected = (id) => selectedGraders.indexOf(id) !== -1;
 
     // Handlers for the Action Menu
     const handleMenuClick = (event) => {
@@ -299,20 +299,20 @@ const ManageTAs = () => {
             return; // Unknown action
         }
 
-        const originalSelectedTAs = tas.filter(t =>
-            selectedTAs.includes(t.user_id)
+        const originalSelectedTAs = graders.filter(t =>
+            selectedGraders.includes(t.user_id)
         );
 
-        setTas(currentTas =>
+        setGraders(currentTas =>
             currentTas.map(ta =>
-                selectedTAs.includes(ta.user_id)
+                selectedGraders.includes(ta.user_id)
                     ? { ...ta, is_enabled: targetStatus }
                     : ta
             )
         );
 
         let failedUpdates = [];
-        for (const taId of selectedTAs) {
+        for (const taId of selectedGraders) {
             try {
                 const response = await fetch(
                     `${process.env.REACT_APP_API_BASE_URL}/api/users/${taId}`,
@@ -343,7 +343,7 @@ const ManageTAs = () => {
             alert(`Error: ${failedUpdates.length} TA(s) failed to update. Reverting their status.`);
 
             // Revert *only* the TAs that failed
-            setTas(currentTas =>
+            setGraders(currentTas =>
                 currentTas.map(ta => {
                     // Is this a TA that failed?
                     if (failedUpdates.includes(ta.user_id)) {
@@ -359,11 +359,11 @@ const ManageTAs = () => {
             );
         }
 
-        setSelectedTAs([]);
+        setSelectedGraders([]);
     };
 
-    const numSelected = selectedTAs.length;
-    const rowCount = filteredTas.length;
+    const numSelected = selectedGraders.length;
+    const rowCount = filteredGraders.length;
 
     return (
         <Box
@@ -410,7 +410,7 @@ const ManageTAs = () => {
                             color: theme.palette.text.primary,
                         }}
                     >
-                        Manage TAs
+                        Manage Graders
                     </Typography>
                 </Box>
 
@@ -432,32 +432,32 @@ const ManageTAs = () => {
                             color: theme.palette.text.primary
                         }}
                     >
-                        Add New TA
+                        Add New Grader
                     </Typography>
                     <Box sx={{ display: "flex", gap: 1.25 }}>
                         <TextField
                             fullWidth
-                            value={newTAName}
-                            placeholder="New TA Name"
-                            onChange={(e) => setNewTAName(e.target.value)}
+                            value={newGraderName}
+                            placeholder="New Grader Name"
+                            onChange={(e) => setNewGraderName(e.target.value)}
                             variant="outlined"
                             size="small"
                         />
                         <TextField
                             fullWidth
                             type="email"
-                            value={newTAEmail}
-                            placeholder="New TA Email"
-                            onChange={(e) => setNewTAEmail(e.target.value)}
+                            value={newGraderEmail}
+                            placeholder="New Grader Email"
+                            onChange={(e) => setNewGraderEmail(e.target.value)}
                             variant="outlined"
                             size="small"
                         />
                         <Button
                             variant="contained"
-                            onClick={addTA}
+                            onClick={addGrader}
                             sx={{ backgroundColor: theme.palette.primary.main, whiteSpace: 'nowrap' }}
                         >
-                            Add TA
+                            Add
                         </Button>
                     </Box>
                 </Box>
@@ -468,7 +468,7 @@ const ManageTAs = () => {
                         value={filterStatus}
                         exclusive
                         onChange={handleFilterChange}
-                        aria-label="Filter TA status"
+                        aria-label="Filter Grader status"
                         sx={{
                             '& .MuiToggleButton-root.Mui-selected': {
                                 color: '#fff',
@@ -576,7 +576,7 @@ const ManageTAs = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {filteredTas.map((ta) => {
+                                {filteredGraders.map((ta) => {
                                     const isEnabled = ta.is_enabled ?? true;
                                     const isItemSelected = isSelected(ta.user_id); // Check if selected
                                     const labelId = `ta-checkbox-${ta.user_id}`;
@@ -646,7 +646,7 @@ const ManageTAs = () => {
                     <ConfirmTADelete
                         handleOpen={deleteOpen}
                         handleClose={deletePopupClose}
-                        ta={selectedTA}
+                        ta={selectedGrader}
                         idNameMap={idNameMap}
                         updateStatus={updateStatus}
                     />
@@ -656,4 +656,4 @@ const ManageTAs = () => {
     );
 };
 
-export default ManageTAs;
+export default ManageGraders;

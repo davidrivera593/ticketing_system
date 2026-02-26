@@ -20,6 +20,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { useNavigate } from "react-router-dom";
 // Note: This still uses ConfirmTADelete, assuming it's a generic user delete modal
 import ConfirmTADelete from "../../components/ConfirmTADelete/ConfirmTADelete";
+import {generateRandomPassword} from "../../services/generateRandomPass";
 
 const ManageAdmins = () => {
     // Master list of all Admins from API
@@ -114,10 +115,10 @@ const ManageAdmins = () => {
             return;
         }
 
-        const defaultPassword = await encryptPassword(`password`); // Encrypt the default password
+        const defaultPassword = generateRandomPassword(); //Generates random password
         try {
             const response = await fetch(
-                `${process.env.REACT_APP_API_BASE_URL}/api/users`,
+                `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
                 {
                     method: "POST",
                     headers: {
@@ -129,6 +130,7 @@ const ManageAdmins = () => {
                         email: newAdminEmail,
                         role: "admin", // Set role to admin
                         password: defaultPassword, // Default password
+                        must_change_password: true
                     }),
                 }
             );

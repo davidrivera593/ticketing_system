@@ -37,11 +37,11 @@ exports.getTeamByName = async (req, res) => {
 
 exports.createTeam = async (req, res) => {
   try {
-    const {team_name, instructor_user_id, sponsor_name, sponsor_email} = req.body;
+    const {team_name, instructor_user_id, sponsor_name, sponsor_email, grader_name, grader_email} = req.body;
     
     const [team, created] = await Team.findOrCreate({
       where: { team_name },
-      defaults: { team_name, instructor_user_id, sponsor_name, sponsor_email }
+      defaults: { team_name, instructor_user_id, sponsor_name, sponsor_email, grader_name, grader_email },
     });
     if (created) return res.status(201).json({ created: true, team });
         return res.status(200).json({ created: false, team });

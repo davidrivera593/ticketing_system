@@ -58,6 +58,15 @@ isAdmin: (req, res, next) => {
       res.status(403).json({ error: "Forbidden" });
     }
   },
+
+    isStaff: (req, res, next) => {
+        const staffRoles = ["admin", "TA", "grader"];
+        if (req.user && staffRoles.includes(req.user.role)) {
+            next(); // Access granted
+        } else {
+            res.status(403).json({ error: "Forbidden: Staff access required" });
+        }
+    },
   canViewTAProfile: (req, res, next) => {
     const requestedUserId = parseInt(req.params.user_id);
     const requestingUserId = req.user.id;
@@ -127,5 +136,6 @@ isAdmin: (req, res, next) => {
     }
   },
 };
+
 
 module.exports = authMiddleware;

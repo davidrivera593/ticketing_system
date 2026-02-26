@@ -5,8 +5,9 @@ const TeamMember = require("./TeamMember");
 const TicketAssignment = require("./TicketAssignment");
 const PasswordResetToken = require("./PasswordResetToken");
 const StudentData = require("./StudentData");
+const BugReport = require("./bugreport"); 
 
-// Define associations
+// Associations
 User.hasMany(TeamMember, { foreignKey: "user_id" });
 TeamMember.belongsTo(User, { foreignKey: "user_id" });
 
@@ -18,9 +19,10 @@ TicketAssignment.belongsTo(User, { foreignKey: "user_id" });
 
 Ticket.hasMany(TicketAssignment, { foreignKey: "ticket_id" });
 TicketAssignment.belongsTo(Ticket, { foreignKey: "ticket_id" });
-
-//add association for student name
 Ticket.belongsTo(User, { foreignKey: "student_id", as: "student" });
+
+User.hasMany(BugReport, { foreignKey: "reporter_id" });
+BugReport.belongsTo(User, { foreignKey: "reporter_id", as: "reporter" });
 
 StudentData.belongsTo(User, { foreignKey: "user_id" });
 User.hasOne(StudentData, { foreignKey: "user_id" });
@@ -34,4 +36,5 @@ module.exports = {
   TicketAssignment,
   PasswordResetToken,
   StudentData,
+  BugReport, 
 };

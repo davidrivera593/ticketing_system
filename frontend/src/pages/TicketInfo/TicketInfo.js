@@ -231,45 +231,46 @@ const TicketInfo = () => {
       }
   }
 
-  const convertToMap = (list) => {
-    return list.reduce((acc, obj) => { //map ID to name
-      acc[obj.user_id] = obj.name;
-      return acc;
-    }, {});
-  };
-
-  const fetchTaMap = async () => {
-    try {
-      const token = Cookies.get("token");
-      
-      const getResponse = await fetch(
-        `${baseURL}/api/users/role/TA`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+// Change your convertToMap to handle roles
+    const convertToMapWithRoles = (taList, graderList) => {
+        const map = {};
+        taList.forEach(user => {
+            map[user.user_id] = { name: user.name, role: 'TA' };
         });
+        graderList.forEach(user => {
+            map[user.user_id] = { name: user.name, role: 'Grader' };
+        });
+        return map;
+    };
 
-        if (!getResponse.ok) {
-          console.error(`Failed to get TAs. Status: ${getResponse.status}`);
-          console.error(`${getResponse.reason}`);
+    const fetchStaffMap = async () => {
+        try {
+            const token = Cookies.get("token");
+
+            // Fetch both in parallel
+            const [taRes, graderRes] = await Promise.all([
+                fetch(`${baseURL}/api/users/role/TA`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`${baseURL}/api/users/role/grader`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            ]);
+
+            const taList = await taRes.json();
+            const graderList = await graderRes.json();
+
+            const combinedMap = convertToMapWithRoles(taList, graderList);
+            setIdToNameMap(combinedMap);
+
+        } catch (err) {
+            console.error("Error fetching staff:", err);
         }
-      
-        const list = await getResponse.json();
-        console.log("all ID: ", list);
-        const idToNameMap = convertToMap(list);
-        setIdToNameMap(idToNameMap);
+    };
 
-      } catch (err) {
-        console.log("Error: ", error);
-        setError(true);
-      }
-  }
 
   useEffect(() => {
-    fetchTaMap();
+      fetchStaffMap();
     fetchAssignedTaID();    
   }, []);
 
@@ -394,10 +395,10 @@ const TicketInfo = () => {
               
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>
-                  ASSIGNED TA
+                  ASSIGNED STAFF
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
-                  {idToNameMap[AssignedID] || 'Unassigned'}
+                    {idToNameMap[AssignedID]?.name || 'Unassigned'}
                 </Typography>
               </Box>
               
