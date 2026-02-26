@@ -10,6 +10,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Cookies from "js-cookie";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import InstructorCard from "../../components/InstructorCard";
 import Pagination from "../../components/Pagination/Pagination";
 import { fetchTicketAssignmentsByUserId, fetchTicketById } from "../../services/ticketServices";
@@ -68,9 +69,10 @@ const InstructorDash = () => {
   const fetchTACounts = async () => {
     try {
       const token = Cookies.get("token");
+      const decodedToken = jwtDecode(token);
+      const currentUserRole = decodedToken.role;
 
-      // Step 1: Fetch all users
-      const usersResponse = await fetch(`${baseURL}/api/users`, {
+      const response = await fetch(`${baseURL}/api/users/role/TA`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -78,18 +80,16 @@ const InstructorDash = () => {
         },
       });
 
-      if (!usersResponse.ok) {
-        throw new Error(
-          `Failed to fetch users, status: ${usersResponse.status}`
-        );
+      if (!response.ok) {
+        throw new Error("Failed to fetch TAs");
       }
 
-      const users = await usersResponse.json();
-      const tas = users.filter((user) => user.role === "TA"); // Filter TAs
+      const tas = await response.json();
       setTotalTAs(tas.length);
 
       const ticketCounts = {};
 
+      // Initialize counts for all TAs
       tas.forEach((ta) => {
         ticketCounts[ta.user_id] = {
           name: ta.name,
@@ -97,53 +97,135 @@ const InstructorDash = () => {
         };
       });
 
-      // Fetch assignments for each TA using the role-filtered endpoint
+      // Fetch assignments for each TA using role-based logic
       const countPromises = tas.map(async (ta) => {
         try {
-          const assignmentsResponse = await fetch(
-            `${baseURL}/api/ticketassignments/users/${ta.user_id}`,
-            {
+          // Use new endpoint if TA is viewing their own stats
+          if (currentUserRole === 'TA' && ta.user_id === decodedToken.id) {
+            const response = await fetch(`${baseURL}/api/tickets/assigned-to-me`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              ticketCounts[ta.user_id].counts = {
+                new: data.summary.openTickets - data.tickets.filter(t => t.status === 'ongoing').length,
+                ongoing: data.tickets.filter(t => t.status === 'ongoing').length,
+                resolved: data.summary.closedTickets,
+              };
             }
-          );
-
-          if (assignmentsResponse.ok) {
-            const assignments = await assignmentsResponse.json();
+          } else if (currentUserRole === 'TA' && ta.user_id !== decodedToken.id) {
+            // For TAs viewing other TAs, only show shared tickets
+            const [assignmentsResponse, myAssignmentsResponse] = await Promise.all([
+              fetch(`${baseURL}/api/ticketassignments/users/${ta.user_id}`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              }),
+              fetch(`${baseURL}/api/ticketassignments/users/${decodedToken.id}`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              })
+            ]);
             
-            const ticketPromises = assignments.map(async (assignment) => {
-              try {
-                const ticketResponse = await fetch(`${baseURL}/api/tickets/${assignment.ticket_id}`, {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-                
-                if (ticketResponse.ok) {
-                  return await ticketResponse.json();
+            if (assignmentsResponse.ok && myAssignmentsResponse.ok) {
+              const [otherTAAssignments, myAssignments] = await Promise.all([
+                assignmentsResponse.json(),
+                myAssignmentsResponse.json()
+              ]);
+              
+              const myTicketIds = myAssignments.map(a => a.ticket_id);
+              const sharedTicketIds = otherTAAssignments
+                .filter(a => myTicketIds.includes(a.ticket_id))
+                .map(a => a.ticket_id);
+              
+              const sharedTicketPromises = sharedTicketIds.map(async (ticketId) => {
+                try {
+                  const ticketResponse = await fetch(`${baseURL}/api/tickets/${ticketId}`, {
+                    method: "GET",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+                  
+                  if (ticketResponse.ok) {
+                    return await ticketResponse.json();
+                  }
+                } catch (err) {
+                  console.error(`Error fetching shared ticket ${ticketId}:`, err);
                 }
-              } catch (err) {
-                console.error(`Error fetching ticket ${assignment.ticket_id}:`, err);
+                return null;
+              });
+              
+              const sharedTickets = (await Promise.all(sharedTicketPromises)).filter(Boolean);
+              
+              sharedTickets.forEach((ticket) => {
+                if (ticket.status === "new") {
+                  ticketCounts[ta.user_id].counts.new += 1;
+                } else if (ticket.status === "ongoing") {
+                  ticketCounts[ta.user_id].counts.ongoing += 1;
+                } else if (ticket.status === "resolved") {
+                  ticketCounts[ta.user_id].counts.resolved += 1;
+                }
+              });
+            }
+          } else {
+            const assignmentsResponse = await fetch(
+              `${baseURL}/api/ticketassignments/users/${ta.user_id}`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
               }
-              return null;
-            });
+            );
 
-            const tickets = (await Promise.all(ticketPromises)).filter(Boolean);
-            
-            tickets.forEach((ticket) => {
-              if (ticket.status === "new") {
-                ticketCounts[ta.user_id].counts.new += 1;
-              } else if (ticket.status === "ongoing") {
-                ticketCounts[ta.user_id].counts.ongoing += 1;
-              } else if (ticket.status === "resolved") {
-                ticketCounts[ta.user_id].counts.resolved += 1;
-              }
-            });
+            if (assignmentsResponse.ok) {
+              const assignments = await assignmentsResponse.json();
+              
+              // Get ticket details for each assignment
+              const ticketPromises = assignments.map(async (assignment) => {
+                try {
+                  const ticketResponse = await fetch(`${baseURL}/api/tickets/${assignment.ticket_id}`, {
+                    method: "GET",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+                  
+                  if (ticketResponse.ok) {
+                    return await ticketResponse.json();
+                  }
+                } catch (err) {
+                  console.error(`Error fetching ticket ${assignment.ticket_id}:`, err);
+                }
+                return null;
+              });
+
+              const tickets = (await Promise.all(ticketPromises)).filter(Boolean);
+              
+              tickets.forEach((ticket) => {
+                if (ticket.status === "new") {
+                  ticketCounts[ta.user_id].counts.new += 1;
+                } else if (ticket.status === "ongoing") {
+                  ticketCounts[ta.user_id].counts.ongoing += 1;
+                } else if (ticket.status === "resolved") {
+                  ticketCounts[ta.user_id].counts.resolved += 1;
+                }
+              });
+            }
           }
         } catch (err) {
           console.error(`Error fetching assignments for TA ${ta.user_id}:`, err);
@@ -151,11 +233,8 @@ const InstructorDash = () => {
       });
 
       await Promise.all(countPromises);
-
-
-
-      console.log(ticketCounts);
-      setTACounts(ticketCounts); // Update state with counts
+      console.log('InstructorDash - Final ticket counts:', ticketCounts);
+      setTACounts(ticketCounts);
     } catch (err) {
       console.error("Error fetching TA ticket counts:", err);
     }

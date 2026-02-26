@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const sendEmail = require("../services/emailService");
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -26,14 +27,17 @@ exports.login = async (req, res) => {
       expiresIn: "1h",
     });
 
-    res.json({ token });
+    res.json({ 
+      token,
+      mustChangePassword: user.must_change_password 
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
 exports.register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, must_change_password } = req.body;
   // const { name, email, password, role, asu_id } = req.body;
   // if (!asu_id || !/^\d{10}$/.test(asu_id)) {
   //   return res.status(400).json({ error: "Invalid ASU ID. It must be a 10-digit number." });
@@ -44,7 +48,13 @@ exports.register = async (req, res) => {
 
     const [user, created] = await User.findOrCreate({
       where: { email },
-      defaults: { name, email, password: hashedPassword, role },
+      defaults: { 
+        name, 
+        email, 
+        password: hashedPassword, 
+        role,
+        must_change_password: must_change_password || false
+      },
     });
 
     // const user = await User.create({
@@ -54,6 +64,35 @@ exports.register = async (req, res) => {
     //   role,
     //   // asu_id,
     // });
+
+    if (created) {
+      try {
+        const subject = "Welcome to the ASU Capstone Help Desk System";
+        const emailBody = 
+        `
+        Hello ${name},
+
+        Your account has been created for the ASU Capstone Help Desk System.
+
+        Login at: https://helpdesk.asucapstonetools.com/login 
+
+        Email: ${email}
+        Password: ${password}
+        Role: ${role}
+
+        Please change your password after your first login. Password is generated for one time use.
+
+        If you have any questions or need assistance, please contact your instructor or reach out for assistance
+
+        Best regards,
+        ASU Capstone Help Desk Team`;
+
+        await sendEmail(email, subject, emailBody);
+        console.log("Welcome email sent to", email);
+      } catch (emailError) {
+        console.error(`Failed to send email to ${email}:`, emailError);
+      }
+    }
 
     if (created) return res.status(201).json({ created: true, user });
     return res.status(200).json({ created: false, user });

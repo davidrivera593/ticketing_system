@@ -26,18 +26,20 @@ export default function TicketsViewController({
                 <Box role="list" sx={{ border:"1px solid", borderColor:"divider", borderRadius:1, overflow:"hidden", bgcolor:"background.paper" }}>
                     <Box sx={{
                         display:{ xs:"none", md:"grid" },
-                        gridTemplateColumns:"auto 1fr auto auto auto",
-                        gap:2, px:2, py:1,
+                        gridTemplateColumns:"40px 1fr 1fr 1fr 2fr 100px 100px 100px",
+                        gap:2, px:2, py:1.5,
                         bgcolor:"background.default", borderBottom:"1px solid", borderColor:"divider",
-                        typography:"overline", letterSpacing:0.6, color:"text.secondary", position:"sticky", top:0, zIndex:1
+                        typography:"overline", letterSpacing:0.6, color:"text.secondary", position:"sticky", top:0, zIndex:1,
+                        fontWeight: "bold"
                     }}>
-                        <span>Requester</span>
-                        <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-                            <Box component="span" aria-hidden="true" sx={{ opacity: 0.6 }}>/</Box>
-                            Subject
-                        </Box>
-                        <span>Status</span>
-                        <span />
+                        <span></span>
+                        <span style={{ textAlign: "center" }}>OWNER NAME</span>
+                        <span style={{ textAlign: "center" }}>TEAM</span>
+                        <span style={{ textAlign: "center" }}>SPONSOR</span>
+                        <span style={{ textAlign: "center" }}>DESCRIPTION</span>
+                        <span style={{ textAlign: "center" }}>TICKET #</span>
+                        <span style={{ textAlign: "center" }}>CREATED</span>
+                        <span style={{ textAlign: "center" }}>STATUS</span>
                     </Box>
 
                     {tickets.length === 0
@@ -50,6 +52,7 @@ export default function TicketsViewController({
                         <Grid key={t.ticket_id ?? t.id} item {...gridBreakpoints}>
                             <TaTicketCard
                                 ticketId={t.ticket_id}
+                                issueType={t.issue_type}
                                 issueDescription={t.issue_description}
                                 status={t.status}
                                 name={t.userName || t.name}

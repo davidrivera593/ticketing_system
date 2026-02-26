@@ -1,9 +1,12 @@
-import { Avatar, Button, Typography, Box } from "@mui/material";
+import { Avatar, Button, Typography, Box, Chip, Badge } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -64,14 +67,16 @@ const InstructorCard = ({
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [officeHours, setOfficeHours] = useState({
-    monday: {start: '12:00', end: '12:00'},
-    tuesday: {start: '12:00', end: '12:00'},
-    wednesday: {start: '12:00', end: '12:00'},
-    thursday: {start: '12:00', end: '12:00'},
-    friday: {start: '12:00', end: '12:00'},
-    saturday: {start: '12:00', end: '12:00'},
-    sunday: {start: '12:00', end: '12:00'}
+    monday: {start: '', end: ''},
+    tuesday: {start: '', end: ''},
+    wednesday: {start: '', end: ''},
+    thursday: {start: '', end: ''},
+    friday: {start: '', end: ''},
+    saturday: {start: '', end: ''},
+    sunday: {start: '', end: ''}
   });
+
+
 
   let navigate = useNavigate();
 
@@ -128,20 +133,59 @@ const InstructorCard = ({
     };
 
     const daysInOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
+    
     const activeHours = [];
     daysInOrder.forEach(day => {
       const hours = officeHours[day];
-      if (hours && hours.start && hours.end) {
-        activeHours.push({
+      
+      if (hours && hours.start && hours.end && hours.start !== '' && hours.end !== '') {
+        const processedHour = {
           day: dayAbbreviations[day],
           start: handleDisplayTime(hours.start),
           end: handleDisplayTime(hours.end)
-        });
+        };
+        activeHours.push(processedHour);
       }
     });
 
     return activeHours; 
+  };
+
+  const getAvailabilityStatus = () => {
+    const now = new Date();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const currentDay = dayNames[now.getDay()];
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const todayHours = officeHours[currentDay];
+    if (todayHours && todayHours.start && todayHours.end) {
+      const [startHour, startMin] = todayHours.start.split(':').map(Number);
+      const [endHour, endMin] = todayHours.end.split(':').map(Number);
+      const startTime = startHour * 60 + startMin;
+      const endTime = endHour * 60 + endMin;
+      
+      if (currentTime >= startTime && currentTime <= endTime) {
+        return { status: 'available', label: 'Available Now', color: 'success' };
+      }
+    }
+    
+    if (todayHours && todayHours.start && todayHours.end) {
+      const [startHour, startMin] = todayHours.start.split(':').map(Number);
+      const startTime = startHour * 60 + startMin;
+      if (currentTime < startTime) {
+        return { 
+          status: 'later', 
+          label: `Available at ${handleDisplayTime(todayHours.start)}`, 
+          color: 'warning' 
+        };
+      }
+    }
+    
+    return { status: 'offline', label: 'Not Available', color: 'default' };
+  };
+
+  const getTotalActiveTickets = () => {
+    return counts.new + counts.ongoing;
   };
 
   const onViewProfile = () => {
@@ -185,7 +229,7 @@ const InstructorCard = ({
         flex: 1,
         gap: 1.25,
         width: "100%",
-        height: "300px",
+        height: "370px",
         overflow: "hidden",
         boxSizing: "border-box",
         border: 1,
@@ -193,69 +237,133 @@ const InstructorCard = ({
       }}
     >
       {/* HEADER */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        <Avatar {...stringAvatar(name)} />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <Typography
-            variant="p"
-            sx={{
-              fontSize: "1rem",
-              color: theme.palette.text.primary,
-              fontWeight: "bold",
-              textAlign: "right",
-            }}
-          >
-            {name}
-          </Typography>
-          <Typography
-            variant="p"
-            sx={{ fontSize: "0.8rem", color: "#212121", textAlign: "right" }}
-          >
-            UGTA
-          </Typography>
-        </div>
-      </div>
-
       <Box
         sx={{
           display: "flex",
           flexDirection: "row",
           justifyContent: "space-between",
-          gap: 3,
+          alignItems: "flex-start",
+          position: "relative"
+        }}
+      >
+        <Avatar {...stringAvatar(name)} />
+        
+        {/* Status Indicator */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: -19.5,
+            right: -18,
+            zIndex: 2
+          }}
+        >
+          <Chip
+            icon={<FiberManualRecordIcon sx={{ fontSize: "0.7rem !important" }} />}
+            label={getAvailabilityStatus().label}
+            color={getAvailabilityStatus().color}
+            size="small"
+            sx={{
+              fontSize: "0.7rem",
+              height: "20px",
+              "& .MuiChip-label": {
+                padding: "0 6px"
+              }
+            }}
+          />
+        </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: "1rem",
+              color: theme.palette.text.primary,
+              fontWeight: "bold",
+              textAlign: "right",
+              marginBottom: 0.5
+            }}
+          >
+            {name}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontSize: "0.8rem", color: theme.palette.text.secondary }}
+            >
+              UGTA
+            </Typography>
+            <Badge
+              badgeContent={getTotalActiveTickets()}
+              color={getTotalActiveTickets() > 5 ? "error" : "primary"}
+              sx={{ marginLeft: 1 }}
+            >
+              <AssignmentIcon sx={{ fontSize: "1rem", color: theme.palette.text.secondary }} />
+            </Badge>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
           flex: 1,
           minHeight: 0, 
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "row", gap: 1, minWidth: "fit-content" }}>
-          <Box sx={{ display: "flex", flexDirection: "column" }}>
-            <Typography variant="body2" sx={{ fontWeight: "bold", color: "#D00505", fontSize: "0.8rem" }}>
-              New
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: "bold", color: "#1965D8", fontSize: "0.8rem" }}>
-              Ongoing
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: "bold", color: "#1C741F", fontSize: "0.8rem" }}>
-              Resolved
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
+        <Box 
+          sx={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            gap: 1, 
+            backgroundColor: theme.palette.background.default,
+            padding: 1.5,
+            borderRadius: 1,
+            border: `1px solid ${theme.palette.divider}`
+          }}
+        >
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontWeight: "bold", 
+              color: theme.palette.text.primary,
               display: "flex",
-              flexDirection: "column",
-              textAlign: "right",
-              minWidth: "30px"
+              alignItems: "center",
+              gap: 0.5
             }}
           >
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>{counts.new}</Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>{counts.ongoing}</Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>{counts.resolved}</Typography>
+            <AssignmentIcon sx={{ fontSize: "0.9rem" }} />
+            Tickets
+          </Typography>
+          
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 2, justifyContent:"center" }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Typography variant="h6" sx={{ fontWeight: "bold", color: "#D00505", fontSize: "1rem" }}>
+                {counts.new}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#D00505", fontSize: "0.7rem" }}>
+                New
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Typography variant="h6" sx={{ fontWeight: "bold", color: "#1965D8", fontSize: "1rem" }}>
+                {counts.ongoing}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#1965D8", fontSize: "0.7rem" }}>
+                Active
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Typography variant="h6" sx={{ fontWeight: "bold", color: "#1C741F", fontSize: "1rem" }}>
+                {counts.resolved}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#1C741F", fontSize: "0.7rem" }}>
+                Done
+              </Typography>
+            </Box>
           </Box>
         </Box>
 
@@ -263,8 +371,12 @@ const InstructorCard = ({
           sx={{ 
             display: "flex", 
             flexDirection: "column",
-            minWidth: 0, 
+            backgroundColor: theme.palette.background.default,
+            padding: 1.5,
+            borderRadius: 1,
+            border: `1px solid ${theme.palette.divider}`,
             flex: 1,
+            minHeight: 0,
             overflow: "hidden"
           }}
         >
@@ -274,34 +386,57 @@ const InstructorCard = ({
               color: theme.palette.text.primary, 
               fontSize: "0.85rem",
               fontWeight: "bold",
-              marginBottom: 0.5
+              marginBottom: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5
             }}
           >
-            Office Hours:
+            <AccessTimeIcon sx={{ fontSize: "0.9rem" }} />
+            Office Hours
           </Typography>
+          
           <Box sx={{ 
-            maxHeight: "100px", 
-            overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: 0.25
+            gap: 0.75,
+            paddingLeft: 0.5,
+            overflowY: "auto",
+            flex: 1,
+            minHeight: 0,
+            paddingRight:0.5
           }}>
             {getActiveOfficeHours().length > 0 ? (
               getActiveOfficeHours().map((hours, index) => (
-                <Typography 
+                <Box
                   key={index}
-                  variant="body2" 
-                  sx={{ 
-                    color: theme.palette.text.secondary, 
-                    fontSize: "0.8rem",
-                    lineHeight: 1.3,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1
                   }}
                 >
-                  {hours.day}: {hours.start} - {hours.end}
-                </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.text.primary,
+                      fontSize: "0.8rem",
+                      fontWeight: "medium",
+                      minWidth: "35px"
+                    }}
+                  >
+                    {hours.day}:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {hours.start} - {hours.end}
+                  </Typography>
+                </Box>
               ))
             ) : (
               <Typography 
@@ -309,10 +444,11 @@ const InstructorCard = ({
                 sx={{ 
                   color: theme.palette.text.disabled, 
                   fontSize: "0.8rem",
-                  fontStyle: "italic"
+                  fontStyle: "italic",
+                  paddingLeft: 0.5
                 }}
               >
-                No hours set
+                No office hours set
               </Typography>
             )}
           </Box>
@@ -330,7 +466,7 @@ const InstructorCard = ({
           width: "fit-content",
           alignSelf: "flex-end",
         }} 
-	onClick={onViewProfile} //need to grab TA's specific information
+        onClick={onViewProfile}
       >
         View Profile
       </Button>

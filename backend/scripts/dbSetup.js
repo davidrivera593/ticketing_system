@@ -26,9 +26,6 @@ async function insertUsers() {
   const hashedPassword = await hashPassword(defaultPassword);
 
   const userPromises = Array.from({ length: 20 }).map(async (_, i) => {
-
-    // const asu_id = faker.random.alphaNumeric(10);
-
     const firstName =  faker.person.firstName();
     const lastName = faker.person.lastName();
     const name = firstName + " " + lastName; // Corrected name generation

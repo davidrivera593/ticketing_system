@@ -7,17 +7,16 @@ import Cookies from "js-cookie";
 import TicketsViewController from "../../components/TicketsViewController";
 import Pagination from "../../components/Pagination/Pagination";
 import { fetchTicketsByUserId } from "../../services/ticketServices";
-import { useNavigate } from "react-router-dom"; // ✅ Import navigation
+import { useNavigate } from "react-router-dom";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 const StudentDash = () => {
   const theme = useTheme();
-  const [allTickets, setAllTickets] = useState([]); // Store all tickets
-  const [tickets, setTickets] = useState([]); // Store current page tickets
+  const [tickets, setTickets] = useState([]); // Store current page tickets only
   const [loading, setLoading] = useState(true);
   const [totalTickets, setTotalTickets] = useState(0);
-  const navigate = useNavigate(); // ✅ Initialize navigation function
+  const navigate = useNavigate();
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -29,23 +28,6 @@ const StudentDash = () => {
   });
 
   const openTicket = (ticket) => navigate(`/ticketinfo?ticket=${ticket.ticket_id}`);
-
-  const applyPagination = (ticketsList, page, itemsPerPage) => {
-    const totalItems = ticketsList.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    
-    const paginatedTickets = ticketsList.slice(startIndex, endIndex);
-    
-    setTickets(paginatedTickets);
-    setPagination({
-      totalItems: totalItems,
-      totalPages: totalPages,
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1
-    });
-  };
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -61,14 +43,31 @@ const StudentDash = () => {
   }, []);
 
   useEffect(() => {
-    if (allTickets.length > 0) {
-      applyPagination(allTickets, currentPage, itemsPerPage);
+    // Handle pagination when page or items per page changes
+    if (window.studentDashAllTickets) {
+      const allTicketsData = window.studentDashAllTickets;
+      const totalItems = allTicketsData.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedTickets = allTicketsData.slice(startIndex, endIndex);
+      
+      setTickets(paginatedTickets);
+      setPagination({
+        totalItems: totalItems,
+        totalPages: totalPages,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1
+      });
     }
-  }, [allTickets, currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage]);
 
   const loadTickets = async () => {
     try {
-      const response = await fetchTicketsByUserId();
+      setLoading(true);
+      
+      // Fetch all tickets (use large limit)
+      const response = await fetchTicketsByUserId(1, 1000);
       
       // Handle both old format (array) and new format (object with pagination)
       const studentTickets = response.tickets || response;
@@ -79,15 +78,30 @@ const StudentDash = () => {
         userName: ticket.student_name || "Unknown"
       }));
       
-      setAllTickets(ticketsWithUserName); // Store all tickets
-      setTotalTickets(response.pagination ? response.pagination.totalItems : ticketsWithUserName.length);
+      // Store all tickets and apply client-side pagination
+      const allTicketsData = ticketsWithUserName;
+      const totalItems = allTicketsData.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedTickets = allTicketsData.slice(startIndex, endIndex);
       
-      applyPagination(ticketsWithUserName, currentPage, itemsPerPage);
+      setTickets(paginatedTickets);
+      setTotalTickets(totalItems);
+      
+      setPagination({
+        totalItems: totalItems,
+        totalPages: totalPages,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1
+      });
+      
+      // Store all tickets for pagination
+      window.studentDashAllTickets = allTicketsData;
       
       setLoading(false);
     } catch (error) {
       console.error("Error fetching student tickets:", error);
-      setAllTickets([]);
       setTickets([]);
       setPagination({
         totalItems: 0,
@@ -202,21 +216,16 @@ const StudentDash = () => {
         />
         
         {/* PAGINATION */}
-        {pagination.totalPages > 1 && (
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={pagination.totalPages}
-              itemsPerPage={itemsPerPage}
-              totalItems={pagination.totalItems}
-              hasNextPage={pagination.hasNextPage}
-              hasPreviousPage={pagination.hasPreviousPage}
-              onPageChange={handlePageChange}
-              onItemsPerPageChange={handleItemsPerPageChange}
-              itemsPerPageOptions={[5, 10, 25, 50]}
-            />
-          </Box>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={pagination.totalItems}
+          itemsPerPage={itemsPerPage}
+          totalPages={pagination.totalPages}
+          hasNextPage={pagination.hasNextPage}
+          hasPreviousPage={pagination.hasPreviousPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
         
         {/* NO TICKETS MESSAGE */}
         {tickets.length === 0 && !loading && (

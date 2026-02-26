@@ -90,7 +90,8 @@ const addStudent = async (name, email, password, section, team_id) => {
         name: name,
         email: email, 
         password: password, 
-        role: "student",  
+        role: "student",
+        must_change_password: true
       }),
     });
 

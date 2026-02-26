@@ -109,7 +109,6 @@ const AllTickets = () => {
         );
       }
 
-      // ✅ ADD: Apply sort filter client-side
       if (activeFilters.sort) {
         if (activeFilters.sort === "newest") {
           filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -122,7 +121,6 @@ const AllTickets = () => {
         }
       }
 
-      // ✅ ADD: Apply status filter client-side
       if (activeFilters.status) {
         if (activeFilters.status.toLowerCase() === "escalated") {
           filtered = filtered.filter(ticket => ticket.escalated === true);
@@ -149,21 +147,18 @@ const AllTickets = () => {
       }
     }
 
-    // ✅ ADD: Client-side pagination for student tickets
     const studentTotalItems = filteredStudentTickets.length;
     const studentTotalPages = Math.ceil(studentTotalItems / studentItemsPerPage);
     const studentStartIndex = (studentCurrentPage - 1) * studentItemsPerPage;
     const studentEndIndex = studentStartIndex + studentItemsPerPage;
     const paginatedStudentTickets = filteredStudentTickets.slice(studentStartIndex, studentEndIndex);
 
-    // ✅ ADD: Client-side pagination for TA tickets  
     const taTotalItems = filteredTaTickets.length;
     const taTotalPages = Math.ceil(taTotalItems / taItemsPerPage);
     const taStartIndex = (taCurrentPage - 1) * taItemsPerPage;
     const taEndIndex = taStartIndex + taItemsPerPage;
     const paginatedTaTickets = filteredTaTickets.slice(taStartIndex, taEndIndex);
 
-    // ✅ UPDATE: Set pagination states
     setStudentPagination({
       totalItems: studentTotalItems,
       totalPages: studentTotalPages,

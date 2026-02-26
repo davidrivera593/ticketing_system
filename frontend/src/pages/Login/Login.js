@@ -122,7 +122,7 @@ export default function SignIn() {
                 return;
             }
 
-            const { token } = await response.json();
+            const { token, mustChangePassword } = await response.json();
 
             Cookies.set("token", token, {
                 secure: true,
@@ -142,6 +142,12 @@ export default function SignIn() {
                 localStorage.setItem('user_changed', Date.now().toString());
             } catch (error) {
                 console.warn('Theme event/storage failed:', error);
+            }
+
+            // Check if user must change password on first login
+            if (mustChangePassword) {
+                navigate("/change-password", { state: { forced: true } });
+                return;
             }
 
             if (userType === "admin") navigate("/admindash");
@@ -258,7 +264,9 @@ export default function SignIn() {
                             >
                                 Sign in
                             </Button>
-                            <Typography>
+
+                            
+                            {/*<Typography>
                                 Don&apos;t have an account?{" "}
                                 <span>
                 <Link
@@ -269,7 +277,7 @@ export default function SignIn() {
                   Sign up
                 </Link>
               </span>
-                            </Typography>
+                            </Typography>*/} 
                         </Box>
                     </MuiCard>
                     {/* Sparky (right) */}

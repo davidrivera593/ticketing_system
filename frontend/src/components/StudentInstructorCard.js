@@ -1,4 +1,4 @@
-import { Avatar, Button, Typography, Box } from "@mui/material";
+import { Avatar, Button, Typography, Box, Chip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import PersonIcon from "@mui/icons-material/Person";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+
+
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
@@ -115,6 +118,40 @@ const StudentInstructorCard = ({
     }
   };
 
+  // Add this helper function after checkAvailability()
+const getAvailabilityStatus = () => {
+  const now = new Date();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const currentDay = dayNames[now.getDay()];
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+  
+  const todayHours = officeHours[currentDay];
+  if (todayHours && todayHours.start && todayHours.end) {
+    const [startHour, startMin] = todayHours.start.split(':').map(Number);
+    const [endHour, endMin] = todayHours.end.split(':').map(Number);
+    const startTime = startHour * 60 + startMin;
+    const endTime = endHour * 60 + endMin;
+    
+    if (currentTime >= startTime && currentTime <= endTime) {
+      return { status: 'available', label: 'Available Now', color: 'success' };
+    }
+  }
+  
+  if (todayHours && todayHours.start && todayHours.end) {
+    const [startHour, startMin] = todayHours.start.split(':').map(Number);
+    const startTime = startHour * 60 + startMin;
+    if (currentTime < startTime) {
+      return { 
+        status: 'later', 
+        label: `Available at ${handleDisplayTime(todayHours.start)}`, 
+        color: 'warning' 
+      };
+    }
+  }
+  
+  return { status: 'offline', label: 'Not Available', color: 'default' };
+};
+
   function handleDisplayTime(time) {
     if (time) {
       let hrs = parseInt(time.split(':')[0]), mins = time.split(':')[1];
@@ -207,36 +244,43 @@ const StudentInstructorCard = ({
         position: "relative",
       }}
     >
-      {/* Availability Indicator */}
-      {isAvailable && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            backgroundColor: "#4caf50",
-            color: "white",
-            borderRadius: "12px",
-            padding: "4px 8px",
-            fontSize: "0.7rem",
-            fontWeight: "bold",
-          }}
-        >
-          Available Now
-        </Box>
-      )}
-
       {/* HEADER */}
-      <div
-        style={{
+      <Box
+        sx={{
           display: "flex",
           flexDirection: "row",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: "flex-start",
+          position: "relative"
         }}
       >
         <Avatar {...stringAvatar(name)} sx={{ width: 56, height: 56 }} />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        
+        {/* Status Indicator */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: -19.5,
+            right: -18,
+            zIndex: 2
+          }}
+        >
+          <Chip
+            icon={<FiberManualRecordIcon sx={{ fontSize: "0.7rem !important" }} />}
+            label={getAvailabilityStatus().label}
+            color={getAvailabilityStatus().color}
+            size="small"
+            sx={{
+              fontSize: "0.7rem",
+              height: "20px",
+              "& .MuiChip-label": {
+                padding: "0 6px"
+              }
+            }}
+          />
+        </Box>
+        
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
           <Typography
             variant="h6"
             sx={{
@@ -262,8 +306,8 @@ const StudentInstructorCard = ({
             <PersonIcon sx={{ fontSize: "0.9rem" }} />
             Teaching Assistant
           </Typography>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* OFFICE HOURS SECTION */}
       <Box
@@ -315,19 +359,6 @@ const StudentInstructorCard = ({
                 {hours.day}: {hours.start} - {hours.end}
               </Typography>
             ))}
-            {isAvailable && (
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "#4caf50",
-                  fontSize: "0.8rem",
-                  fontWeight: "bold",
-                  marginTop: 0.5
-                }}
-              >
-                Available now!
-              </Typography>
-            )}
           </Box>
         ) : (
           <Typography

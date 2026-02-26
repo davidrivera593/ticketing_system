@@ -2,6 +2,7 @@
 import React from "react";
 import { Avatar, Chip, Typography, IconButton, Stack, Box, Tooltip } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { generateTicketNumber } from "../constants/IssueTypes";
 
 const statusChip = (s = "unknown") => {
   const m = {
@@ -25,13 +26,33 @@ function initials(name = "") {
 export default function TicketRow({ ticket, onOpen, escalated }) {
   const {
     ticket_id,
+    issue_type,
     issue_description,
     status,
     userName,
     student_name,
+    teamName,
+    team_name,
+    sponsor_name,
+    created_at,
     updated_at,
   } = ticket;
 
+  // Handle different field names for team data
+  const displayTeamName = teamName || team_name || "No Team";
+  const displaySponsorName = sponsor_name || "No Sponsor";
+
+
+  // Format the created date to exclude time
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric', 
+      year: 'numeric'
+    });
+  };
 
   return (
     <Box
@@ -41,71 +62,92 @@ export default function TicketRow({ ticket, onOpen, escalated }) {
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen?.(ticket)}
       sx={{
         display: "grid",
-        gridTemplateColumns: "auto 1fr auto auto auto",
+        gridTemplateColumns: "40px 1fr 1fr 1fr 2fr 100px 100px 100px",
         alignItems: "center",
         gap: 2,
         px: 2,
-        py: 1.25,
+        py: 1.5,
         borderBottom: "1px solid",
         borderColor: "divider",
         cursor: "pointer",
         "&:hover": { bgcolor: "action.hover" },
         "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main" },
+        minHeight: 56
       }}
       aria-label={`Open ticket for ${userName}`}
     >
-      <Avatar>{initials(userName)}</Avatar>
+      {/* Avatar Column */}
+      <Avatar sx={{ width: 32, height: 32 }}>{initials(userName)}</Avatar>
 
-      <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-        {}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      {/* Owner Name Column */}
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <Typography variant="body2" fontWeight={600} noWrap title={userName}>
-          {userName}
+          {userName || student_name}
         </Typography>
         {escalated && (
           <Chip 
             label="Escalated"
             size="small"
-            sx={{ bgcolor: "#D00505", color: "white", fontSize: "0.7rem", height:"18px", fontWeight:"bold"}}
+            sx={{ 
+              bgcolor: "#D00505", 
+              color: "white", 
+              fontSize: "0.65rem", 
+              height: "16px", 
+              fontWeight: "bold",
+              mt: 0.5
+            }}
           />
         )}
-        </Box>
-        
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-          title={issue_description}
-        >
-          {issue_description}
-        </Typography>
+      </Box>
 
-        {/* (Optional) show id subtly — remove if you don’t want it */}
-        {/* <Typography variant="caption" color="text.disabled">#{ticket_id}</Typography> */}
-      </Stack>
-
-      <Box>{statusChip(status)}</Box>
-
-      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
-        {updated_at ? new Date(updated_at).toLocaleString() : ""}
+      {/* Team Column */}
+      <Typography variant="body2" noWrap title={displayTeamName} sx={{ color: "text.primary", textAlign: "center" }}>
+        {displayTeamName}
       </Typography>
 
-      <Tooltip title="Open ticket">
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen?.(ticket);
-          }}
-        >
-          <OpenInNewIcon fontSize="inherit" />
-        </IconButton>
-      </Tooltip>
+      {/* Sponsor Column */}
+      <Typography variant="body2" noWrap title={displaySponsorName} sx={{ color: "text.primary", textAlign: "center" }}>
+        {displaySponsorName}
+      </Typography>
+
+      {/* Description Column */}
+      <Typography 
+        variant="body2" 
+        color="text.secondary"
+        noWrap
+        title={issue_description}
+        sx={{ minWidth: 0, textAlign: "center" }}
+      >
+        {issue_description}
+      </Typography>
+
+      {/* Ticket Number Column */}
+      <Typography 
+        variant="body2" 
+        fontWeight={600} 
+        sx={{ 
+          color: "primary.main",
+          fontFamily: "monospace",
+          whiteSpace: "nowrap",
+          textAlign: "center"
+        }}
+      >
+        {generateTicketNumber(issue_type, ticket_id)}
+      </Typography>
+
+      {/* Created Date Column */}
+      <Typography 
+        variant="body2" 
+        color="text.secondary" 
+        sx={{ whiteSpace: "nowrap", minWidth: 80, textAlign: "center" }}
+      >
+        {formatDate(created_at)}
+      </Typography>
+
+      {/* Status Column */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {statusChip(status)}
+      </Box>
     </Box>
   );
 }

@@ -1,6 +1,7 @@
 import AdminDash from "./pages/AdminDash/AdminDash";
 import AllAssignees from "./pages/AllAssignees/AllAssignees";
 import AllTickets from "./pages/AllTickets/AllTickets";
+import ChangePassword from "./pages/ChangePassword/ChangePassword";
 import InstructorDash from "./pages/InstructorDash/InstructorDash";
 import InstructorProfile from "./pages/InstructorProfile/InstructorProfile";
 import InstructorTickets from "./pages/InstructorTickets/InstructorTickets";
@@ -18,6 +19,12 @@ import Unauthorized from "./pages/Unauthorized/Unauthorized";
 const routes = [
   { path: "/login", element: <Login />, isProtected: false },
   { path: "/unauthorized", element: <Unauthorized />, isProtected: false },
+  {
+    path: "/change-password",
+    element: <ChangePassword />,
+    isProtected: true,
+    roles: ["admin", "student", "TA"],
+  },
   {
     path: "/ticketinfo",
     element: <TicketInfo />,
