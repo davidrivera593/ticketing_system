@@ -1,0 +1,77 @@
+.developer-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #c6c6c9;
+}
+
+/* Your shared SideBar Drawer is 240px wide */
+.developer-main {
+  flex: 1;
+  padding: 50px;
+  margin-left: 240px;
+}
+
+.developer-main h1 {
+  text-align: center;
+  margin: 0 0 24px;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.developer-report-card {
+  background: #ececec;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  max-width: 1020px;
+  margin: 0 auto;
+}
+
+.developer-report-card h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.developer-report-card p {
+  margin: 4px 0 16px;
+  font-size: 1rem;
+  color: #707070;
+}
+
+.developer-report-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.developer-report-card th,
+.developer-report-card td {
+  font-size: 1rem;
+  padding: 15px 14px;
+  border-bottom: 1px solid #d4d4d4;
+  text-align: left;
+}
+
+.developer-empty-row {
+  text-align: center !important;
+  color: #757575;
+}
+
+@media (max-width: 1200px) {
+  .developer-report-card th,
+  .developer-report-card td {
+    font-size: 1rem;
+  }
+
+  .developer-main h1 {
+    font-size: 2rem;
+  }
+
+  .developer-report-card h2 {
+    font-size: 2rem;
+  }
+
+  .developer-report-card p {
+    font-size: 1rem;
+  }
+}

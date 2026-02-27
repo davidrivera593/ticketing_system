@@ -154,6 +154,7 @@ export default function SignIn() {
             else if (userType === "student") navigate("/studentdash");
             else if (userType === "TA") navigate("/instructordash");
             else if (userType === "grader") navigate("/graderdash");
+            else if (userType === "developer") navigate("/developerdash");
         } catch (e) {
             console.error(e);
             setEmailErrorMessage("Something went wrong. Please try again.");

@@ -4,7 +4,7 @@ import LayersIcon from "@mui/icons-material/Layers";
 import ListIcon from "@mui/icons-material/List";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
-import PeopleIcon from '@mui/icons-material/People';
+import PeopleIcon from "@mui/icons-material/People";
 import {
   Drawer,
   List,
@@ -19,9 +19,8 @@ import { useNavigate } from "react-router-dom";
 import ASULogo from "../../assets/ASULogo.png";
 import CreateTicket from "../CreateTicket/CreateTicket";
 import BugReportIcon from "@mui/icons-material/BugReport";
-import GroupShareTicketSideBar from "../GroupShareTicketSideBar/GroupShareTicketSideBar";
+//import GroupShareTicketSideBar from "../GroupShareTicketSideBar/GroupShareTicketSideBar";
 import "./SideBar.css";
-
 
 const SideBar = () => {
   const [selectedPage, setSelectedPage] = React.useState(0);
@@ -70,7 +69,7 @@ const SideBar = () => {
     >
       <img src={ASULogo} alt="Logo" />
       <List className="ticketsNavigation">
-        <ListItemButton 
+        <ListItemButton
           className="buttonStyle"
           selected={selectedPage === 0}
           onClick={() => {
@@ -81,117 +80,119 @@ const SideBar = () => {
               navigate("/studentdash");
             } else if (userType == "TA") {
               navigate("/instructordash");
-            }
-            else if (userType == "grader") {
-                navigate("/graderdash");
+            } else if (userType == "grader") {
+              navigate("/graderdash");
+            } else if (userType == "developer") {
+              navigate("/developerdash");
             }
           }}
         >
+          <ListItemIcon>
+            <DashboardIcon className="iconStyle" />
+          </ListItemIcon>
+          <ListItemText className="fontStyle" primary="Dashboard" />
+        </ListItemButton>
+
+        {/* Admin "All Tickets" Button */}
+        {userType === "admin" && (
+          <ListItemButton
+            className="buttonStyle"
+            selected={selectedPage === 1}
+            onClick={() => {
+              setSelectedPage(1);
+              navigate("/alltickets");
+            }}
+          >
+            <ListItemIcon>
+              <ListIcon className="iconStyle" />
+            </ListItemIcon>
+            <ListItemText className="fontStyle" primary="All Tickets" />
+          </ListItemButton>
+        )}
+
+        {/* Student "My Tickets" Button */}
+        {userType === "student" && (
+          <ListItemButton
+            className="buttonStyle"
+            selected={selectedPage === 1}
+            onClick={() => {
+              setSelectedPage(1);
+              navigate("/mytickets");
+            }}
+          >
+            <ListItemIcon>
+              <ListIcon className="iconStyle" />
+            </ListItemIcon>
+            <ListItemText className="fontStyle" primary="My Tickets" />
+          </ListItemButton>
+        )}
+
+        {/* TA Ticket Buttons */}
+        {userType === "TA" && (
+          <>
+            <ListItemButton
+              className="buttonStyle"
+              selected={selectedPage === 1}
+              onClick={() => {
+                setSelectedPage(1);
+                navigate("/instructortickets");
+              }}
+            >
               <ListItemIcon>
-                <DashboardIcon className="iconStyle" />
+                <ListIcon className="iconStyle" />
               </ListItemIcon>
-              <ListItemText className="fontStyle" primary="Dashboard" />
+              <ListItemText className="fontStyle" primary="Assigned Tickets" />
             </ListItemButton>
 
-          {/* Admin "All Tickets" Button */}
-          {userType === "admin" && (
-              <ListItemButton
-                  className="buttonStyle"
-                  selected={selectedPage === 1}
-                  onClick={() => {
-                      setSelectedPage(1);
-                      navigate("/alltickets");
-                  }}
-              >
-                  <ListItemIcon>
-                      <ListIcon className="iconStyle" />
-                  </ListItemIcon>
-                  <ListItemText className="fontStyle" primary="All Tickets" />
-              </ListItemButton>
-          )}
-
-          {/* Student "My Tickets" Button */}
-          {userType === "student" && (
-              <ListItemButton
-                  className="buttonStyle"
-                  selected={selectedPage === 1}
-                  onClick={() => {
-                      setSelectedPage(1);
-                      navigate("/mytickets");
-                  }}
-              >
-                  <ListItemIcon>
-                      <ListIcon className="iconStyle" />
-                  </ListItemIcon>
-                  <ListItemText className="fontStyle" primary="My Tickets" />
-              </ListItemButton>
-          )}
-
-          {/* TA Ticket Buttons */}
-          {userType === "TA" && (
-              <>
-                  <ListItemButton
-                      className="buttonStyle"
-                      selected={selectedPage === 1}
-                      onClick={() => {
-                          setSelectedPage(1);
-                          navigate("/instructortickets");
-                      }}
-                  >
-                      <ListItemIcon>
-                          <ListIcon className="iconStyle" />
-                      </ListItemIcon>
-                      <ListItemText className="fontStyle" primary="Assigned Tickets" />
-                  </ListItemButton>
-
-              <ListItemButton
+            <ListItemButton
               className="buttonStyle"
               selected={selectedPage === 6} // Assign a unique selectedPage index for "My Tickets"
               onClick={() => {
-                  setSelectedPage(6);
-                  navigate("/TaRequestTickets");
+                setSelectedPage(6);
+                navigate("/TaRequestTickets");
               }}
-              >{}
-          <ListItemIcon>
+            >
+              {}
+              <ListItemIcon>
+                <ListIcon className="iconStyle" />
+              </ListItemIcon>
+              <ListItemText className="fontStyle" primary="My Tickets" />
+            </ListItemButton>
+          </>
+        )}
+
+        {/* Grader "My Tickets" Button */}
+        {userType === "grader" && (
+          <ListItemButton
+            className="buttonStyle"
+            selected={selectedPage === 1}
+            onClick={() => {
+              setSelectedPage(1);
+              navigate("/gradertickets");
+            }}
+          >
+            <ListItemIcon>
               <ListIcon className="iconStyle" />
-          </ListItemIcon>
-          <ListItemText className="fontStyle" primary="My Tickets" />
-              </ListItemButton>
-    </>
-              )}
+            </ListItemIcon>
+            <ListItemText className="fontStyle" primary="My Tickets" />
+          </ListItemButton>
+        )}
 
-          {/* Grader "My Tickets" Button */}
-          {userType === "grader" && (
-              <ListItemButton
-                  className="buttonStyle"
-                  selected={selectedPage === 1}
-                  onClick={() => {
-                      setSelectedPage(1);
-                      navigate("/gradertickets");
-                  }}
-              >
-                  <ListItemIcon>
-                      <ListIcon className="iconStyle" />
-                  </ListItemIcon>
-                  <ListItemText className="fontStyle" primary="My Tickets" />
-              </ListItemButton>
-          )}
-
-      { userType === "admin" && (
-      <ListItemButton
-          className="buttonStyle"
-          selected={selectedPage === 5} // Assign a unique selectedPage index for "Escalated Tickets"
-          onClick={() => {
-            setSelectedPage(5);
-            navigate("/escalatedtickets"); // Navigate to a new route for escalated tickets
-          }}
-        >
-          <ListItemIcon>
-            <LayersIcon className="iconStyle" />
-          </ListItemIcon>
-          <ListItemText className="fontStyle" primary="Escalated Tickets" />
-        </ListItemButton>
-      )}
+        {userType === "admin" && (
+          <ListItemButton
+            className="buttonStyle"
+            selected={selectedPage === 5} // Assign a unique selectedPage index for "Escalated Tickets"
+            onClick={() => {
+              setSelectedPage(5);
+              navigate("/escalatedtickets"); // Navigate to a new route for escalated tickets
+            }}
+          >
+            <ListItemIcon>
+              <LayersIcon className="iconStyle" />
+            </ListItemIcon>
+            <ListItemText className="fontStyle" primary="Escalated Tickets" />
+          </ListItemButton>
+        )}
 
         <ListItemButton
           className="buttonStyle"
@@ -207,7 +208,7 @@ const SideBar = () => {
           <ListItemText className="fontStyle" primary="All Assignees" />
         </ListItemButton>
 
-        { (userType === "student" || userType === "TA") && (
+        {(userType === "student" || userType === "TA") && (
           <ListItemButton
             className="buttonStyle"
             selected={selectedPage === 3}
@@ -224,7 +225,7 @@ const SideBar = () => {
           </ListItemButton>
         )}
 
-        { (userType === "TA" || userType === "admin") && (
+        {(userType === "TA" || userType === "admin") && (
           <ListItemButton
             className="buttonStyle"
             selected={selectedPage === 3}
@@ -257,8 +258,8 @@ const SideBar = () => {
             zIndex: 1000,
           }}
         >
-            {userType === "student" && <CreateTicket onClose={closeCreateModal} />}
-            {userType === "TA" && <InstructorCreateTicket onClose={closeCreateModal} />}
+          {userType === "student" && <CreateTicket onClose={closeCreateModal} />}
+          {userType === "TA" && <InstructorCreateTicket onClose={closeCreateModal} />}
         </div>
       )}
 
@@ -277,7 +278,9 @@ const SideBar = () => {
             zIndex: 1000,
           }}
         >
-            {(userType === "TA" || userType === "admin") && <GroupShareTicketSideBar onClose={closeShareModal} />}
+          {(userType === "TA" || userType === "admin") && (
+            <GroupShareTicketSideBar onClose={closeShareModal} />
+          )}
         </div>
       )}
 
@@ -296,13 +299,12 @@ const SideBar = () => {
             zIndex: 1000,
           }}
         >
-
-            {(userType === "student" || userType === "TA") && (
-                <CreateTicket
-                    onClose={closeModal}
-                    forcedRole={userType === "student" ? "student" : "TA"}
-                />
-            )}
+          {(userType === "student" || userType === "TA") && (
+            <CreateTicket
+              onClose={closeModal}
+              forcedRole={userType === "student" ? "student" : "TA"}
+            />
+          )}
         </div>
       )}
 
@@ -328,7 +330,6 @@ const SideBar = () => {
       {/*      } else if (userType === "grader") {*/}
       {/*          navigate("/gradersettings");*/}
       {/*      }*/}
-
       {/*    }}*/}
       {/*    selected={selectedPage === 4}*/}
       {/*  >*/}
