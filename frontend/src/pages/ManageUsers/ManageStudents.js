@@ -364,6 +364,11 @@ const ManageStudents = () => {
                         exclusive
                         onChange={handleFilterChange}
                         aria-label="Filter student status"
+                        sx={{
+                            '& .MuiToggleButton-root.Mui-selected': {
+                                color: '#fff',
+                            },
+                        }}
                     >
                         <ToggleButton value="all">All</ToggleButton>
                         <ToggleButton value="enabled">Enabled</ToggleButton>

@@ -52,6 +52,16 @@ const Pagination = ({
   const startItem = Math.min((currentPage - 1) * itemsPerPage + 1, totalItems);
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
+  const handlePageClick = (event, targetPage) => {
+    event.preventDefault();
+  
+    if (event.currentTarget && typeof event.currentTarget.blur === "function") {
+      event.currentTarget.blur();
+    }
+  
+    onPageChange(targetPage);
+  };
+
   return (
     <div className="pagination-container">
       {/* Items per page selector */}
@@ -85,7 +95,9 @@ const Pagination = ({
       {totalPages > 1 && (
         <div className="pagination-controls">
           <button
-            onClick={() => onPageChange(currentPage - 1)}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => handlePageClick(e, currentPage - 1)}
             disabled={!hasPreviousPage}
             className="pagination-btn pagination-nav"
             title="Previous page"
@@ -100,8 +112,10 @@ const Pagination = ({
               </span>
             ) : (
               <button
+                type="button"
                 key={number}
-                onClick={() => onPageChange(number)}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => handlePageClick(e, number)}
                 className={`pagination-btn ${currentPage === number ? 'active' : ''}`}
               >
                 {number}
@@ -110,7 +124,9 @@ const Pagination = ({
           ))}
 
           <button
-            onClick={() => onPageChange(currentPage + 1)}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => handlePageClick(e, currentPage + 1)}
             disabled={!hasNextPage}
             className="pagination-btn pagination-nav"
             title="Next page"
