@@ -24,8 +24,7 @@ import "./SideBar.css";
 
 const SideBar = () => {
   const [selectedPage, setSelectedPage] = React.useState(0);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   let navigate = useNavigate();
 
   const token = Cookies.get("token");
@@ -38,23 +37,13 @@ const SideBar = () => {
     navigate("/login");
   };
 
-  const openCreateModal = () => {
-    setShowCreateModal(true);
+  const openModal = () => {
+    setShowModal(true);
     document.body.classList.add("modal-open"); // Disable body scroll
   };
 
-  const closeCreateModal = () => {
-    setShowCreateModal(false);
-    document.body.classList.remove("modal-open"); // Enable body scroll
-  };
-
-  const openShareModal = () => {
-    setShowShareModal(true);
-    document.body.classList.add("modal-open"); // Disable body scroll
-  };
-
-  const closeShareModal = () => {
-    setShowShareModal(false);
+  const closeModal = () => {
+    setShowModal(false);
     document.body.classList.remove("modal-open"); // Enable body scroll
   };
 
@@ -211,7 +200,7 @@ const SideBar = () => {
             className="buttonStyle"
             selected={selectedPage === 3}
             onClick={() => {
-              openCreateModal();
+              openModal();
               //setSelectedPage(3);
               //navigate("ticketsubmit");
             }}
@@ -224,7 +213,7 @@ const SideBar = () => {
         )}
       </List>
 
-      {showCreateModal && (
+      {showModal && (
         <div
           style={{
             position: "fixed",
@@ -241,7 +230,7 @@ const SideBar = () => {
         >
             {(userType === "student" || userType === "TA") && (
                 <CreateTicket
-                    onClose={closeCreateModal}
+                    onClose={closeModal}
                     forcedRole={userType === "student" ? "student" : "TA"}
                 />
             )}
