@@ -450,6 +450,7 @@ const TicketInfo = () => {
               <ConfirmReassign handleOpen={reassignOpen} handleClose={() => setReassignOpen(false)} ticketID={ticketId} oldTAID={AssignedID} idNameMap={idToNameMap} updateTA={(newTAID) => setAssignedID(newTAID)} />
 
               {/*Currently copies from Reassign, do not use yet */}
+              {/*It's probably fine to use, but test some more first before removing these comment*/}
               {(userType === "admin" || userType === "TA") && (
               <Button variant="outlined" onClick={() => setShareOpen(true)}>Share</Button>
               )}

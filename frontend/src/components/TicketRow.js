@@ -1,6 +1,6 @@
 // src/components/TicketRow.js
 import React from "react";
-import { Avatar, Chip, Typography, IconButton, Stack, Box, Tooltip } from "@mui/material";
+import { Avatar, Chip, Typography, IconButton, Stack, Box, Tooltip, Checkbox } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { generateTicketNumber } from "../constants/IssueTypes";
 
@@ -23,7 +23,7 @@ function initials(name = "") {
   return (a + b).toUpperCase();
 }
 
-export default function TicketRow({ ticket, onOpen, escalated }) {
+export default function TicketRow({ ticket, onOpen, escalated, showCheckboxes, selectedCheckboxes, onToggleSelect }) {
   const {
     ticket_id,
     issue_type,
@@ -58,15 +58,29 @@ export default function TicketRow({ ticket, onOpen, escalated }) {
     <Box
       role="button"
       tabIndex={0}
-      onClick={() => onOpen?.(ticket)}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen?.(ticket)}
+      onClick={() => {
+        if (showCheckboxes) {
+          onToggleSelect?.(ticket_id ?? ticket.id);
+        } else {
+          onOpen?.(ticket);
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          if (showCheckboxes) {
+            onToggleSelect?.(ticket_id ?? ticket.id);
+          } else {
+            onOpen?.(ticket);
+          }
+        }
+      }}
       sx={{
         display: "grid",
-        gridTemplateColumns: "40px 1fr 1fr 1fr 2fr 100px 100px 100px",
-        alignItems: "center",
+        gridTemplateColumns: showCheckboxes ? "40px 30px 0px 1fr 1fr 1fr 2fr 100px 100px 100px" : "30px 0px 1fr 1fr 1fr 2fr 100px 100px 100px",
         gap: 2,
         px: 2,
         py: 1.5,
+        alignItems: "center",
         borderBottom: "1px solid",
         borderColor: "divider",
         cursor: "pointer",
@@ -76,8 +90,22 @@ export default function TicketRow({ ticket, onOpen, escalated }) {
       }}
       aria-label={`Open ticket for ${userName}`}
     >
+      {/*Checkbox Column*/}      
+        {showCheckboxes && (
+          <span>
+            <Checkbox
+              size="small"
+              checked={selectedCheckboxes}
+              onClick={(e) => e.stopPropagation()} /* prevent row click */
+              onChange={() => onToggleSelect?.(ticket_id ?? ticket.id)}
+            />
+          </span>
+        )}
+
       {/* Avatar Column */}
       <Avatar sx={{ width: 32, height: 32 }}>{initials(userName)}</Avatar>
+      
+      <Stack spacing={0.25} sx={{ minWidth: 0 }}></Stack>
 
       {/* Owner Name Column */}
       <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
