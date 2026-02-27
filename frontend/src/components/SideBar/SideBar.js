@@ -19,13 +19,11 @@ import { useNavigate } from "react-router-dom";
 import ASULogo from "../../assets/ASULogo.png";
 import CreateTicket from "../CreateTicket/CreateTicket";
 import BugReportIcon from "@mui/icons-material/BugReport";
-//import GroupShareTicketSideBar from "../GroupShareTicketSideBar/GroupShareTicketSideBar";
 import "./SideBar.css";
 
 const SideBar = () => {
   const [selectedPage, setSelectedPage] = React.useState(0);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   let navigate = useNavigate();
 
   const token = Cookies.get("token");
@@ -38,23 +36,13 @@ const SideBar = () => {
     navigate("/login");
   };
 
-  const openCreateModal = () => {
-    setShowCreateModal(true);
+  const openModal = () => {
+    setShowModal(true);
     document.body.classList.add("modal-open"); // Disable body scroll
   };
 
-  const closeCreateModal = () => {
-    setShowCreateModal(false);
-    document.body.classList.remove("modal-open"); // Enable body scroll
-  };
-
-  const openShareModal = () => {
-    setShowShareModal(true);
-    document.body.classList.add("modal-open"); // Disable body scroll
-  };
-
-  const closeShareModal = () => {
-    setShowShareModal(false);
+  const closeModal = () => {
+    setShowModal(false);
     document.body.classList.remove("modal-open"); // Enable body scroll
   };
 
@@ -213,7 +201,7 @@ const SideBar = () => {
             className="buttonStyle"
             selected={selectedPage === 3}
             onClick={() => {
-              openCreateModal();
+              openModal();
               //setSelectedPage(3);
               //navigate("ticketsubmit");
             }}
@@ -224,65 +212,7 @@ const SideBar = () => {
             <ListItemText className="fontStyle" primary="Create A Ticket" />
           </ListItemButton>
         )}
-
-        {(userType === "TA" || userType === "admin") && (
-          <ListItemButton
-            className="buttonStyle"
-            selected={selectedPage === 3}
-            onClick={() => {
-              openShareModal();
-              //setSelectedPage(3);
-              //navigate("ticketsubmit");
-            }}
-          >
-            <ListItemIcon>
-              <PeopleIcon className="iconStyle" />
-            </ListItemIcon>
-            <ListItemText className="fontStyle" primary="Share Tickets" />
-          </ListItemButton>
-        )}
       </List>
-
-      {showCreateModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          {userType === "student" && <CreateTicket onClose={closeCreateModal} />}
-          {userType === "TA" && <InstructorCreateTicket onClose={closeCreateModal} />}
-        </div>
-      )}
-
-      {showShareModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          {(userType === "TA" || userType === "admin") && (
-            <GroupShareTicketSideBar onClose={closeShareModal} />
-          )}
-        </div>
-      )}
 
       {showModal && (
         <div
@@ -299,12 +229,12 @@ const SideBar = () => {
             zIndex: 1000,
           }}
         >
-          {(userType === "student" || userType === "TA") && (
-            <CreateTicket
-              onClose={closeModal}
-              forcedRole={userType === "student" ? "student" : "TA"}
-            />
-          )}
+            {(userType === "student" || userType === "TA") && (
+                <CreateTicket
+                    onClose={closeModal}
+                    forcedRole={userType === "student" ? "student" : "TA"}
+                />
+            )}
         </div>
       )}
 
