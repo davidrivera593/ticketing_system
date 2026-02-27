@@ -469,6 +469,11 @@ const ManageGraders = () => {
                         exclusive
                         onChange={handleFilterChange}
                         aria-label="Filter Grader status"
+                        sx={{
+                            '& .MuiToggleButton-root.Mui-selected': {
+                                color: '#fff',
+                            },
+                        }}
                     >
                         <ToggleButton value="all">All</ToggleButton>
                         <ToggleButton value="enabled">Enabled</ToggleButton>
