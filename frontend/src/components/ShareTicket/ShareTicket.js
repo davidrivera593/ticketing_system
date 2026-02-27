@@ -11,8 +11,6 @@ const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 const ShareTicket = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap, updateTA, allTAs}) => { 
     const [selectedTA, setSelectedTA] = useState(''); //current TA
-    const [ticketList, setTicketList] = useState([]); // Initialize as empty array
-    const [idToNameMap, setIdToNameMap] = useState([]);
     const [error, setError] = useState(false);
     const token = Cookies.get("token");
 
@@ -20,45 +18,6 @@ const ShareTicket = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap, upd
 
     const handleSelectChange = (event) => {
         setSelectedTA(Number(event.target.value));
-    };
-
-    const fetchAssignedTaID = async () => {
-        try {
-          const token = Cookies.get("token");
-          
-          const getResponse = await fetch(
-            `${baseURL}/api/ticketassignments/ticket/${ticketID}`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-    
-            //console.log("Assigned TA ID: ", getResponse);
-    
-            if (!getResponse.ok) {
-              console.error(`Failed to get assigned TAs ID. Status: ${getResponse.status}`);
-              console.error(`${getResponse.reason}`);
-            }
-          
-            const list = await getResponse.json();
-            console.log("Assigned TA ID: ", list);
-            const TA_id = list.map(obj => obj.user_id)[0]; //if tickets have multiple TAs, only get the first one
-            setAssignedID(TA_id);
-    
-          } catch (err) {
-            console.log("Error: ", err);
-            setError(true);
-          }
-    }
-
-    const convertToMap = (list) => {
-        return list.reduce((acc, obj) => { //map ID to name
-        acc[obj.user_id] = obj.name;
-        return acc;
-        }, []);
     };
 
     const handleUpdate = async (event) => {
@@ -84,13 +43,14 @@ const ShareTicket = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap, upd
                     console.error(`Failed to updated TA assignment. Status: ${shareResponse.status}`);
                     console.error(`${shareResponse.reason}`);
                 }
-                updateTA(selectedTA); //share to new TA, so it will be displayed on main page 
+                updateTA(selectedTA); //share to new TA, so it will be displayed on main page                 
+                alert("Finished sharing ticket");
 
-            } catch(error) {
-                alert("ERROR");
-                console.log("Error: ", error);
-                setError(true);
-            }
+        } catch(error) {
+            alert("ERROR");
+            console.log("Error: ", error);
+            setError(true);
+        }
     }
 
     const handleSubmit = () => {
@@ -114,7 +74,6 @@ const ShareTicket = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap, upd
             component: 'form',
             onSubmit: (event) => {
             event.preventDefault();
-            //handleClose();
             },
         }}
         >
@@ -124,7 +83,7 @@ const ShareTicket = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap, upd
                 </DialogContentText>
                 <DialogContentText> 
                     {Object.entries(idNameMap).map(([user_id, name]) => (allTAs.includes(Number(user_id)) &&
-                        <option key={user_id} value={user_id}>• {name}</option> //TA name is displayed but actual value for 'selectedTA' is user_id
+                        <option key={user_id} value={user_id}>• {name}</option>
                         ))}
                 </DialogContentText>
                 <DialogContentText> 
