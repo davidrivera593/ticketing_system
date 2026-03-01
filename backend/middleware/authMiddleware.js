@@ -116,8 +116,8 @@ isAdmin: (req, res, next) => {
         }
       }
       
-      // TAs can edit tickets they are assigned to
-      if (userRole === "TA") {
+      // TAs and graders can edit tickets they are assigned to
+      if (userRole === "TA" || userRole === "grader") {
         const assignment = await TicketAssignment.findOne({
           where: { ticket_id: ticketId, user_id: userId }
         });

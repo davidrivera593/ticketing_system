@@ -14,6 +14,12 @@ const TaConfirmAssign = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap,
     const [error, setError] = useState(false);
     const token = Cookies.get("token");
 
+    const getDisplayName = (value, fallbackId) => {
+        if (typeof value === "string") return value;
+        if (value && typeof value === "object") return value.name || `User ${fallbackId}`;
+        return `User ${fallbackId}`;
+    };
+
     const handleSelectChange = (event) => {
         setSelectedTA(Number(event.target.value));
     };
@@ -76,8 +82,8 @@ const TaConfirmAssign = ({handleOpen, handleClose, ticketID, oldTAID, idNameMap,
                 <DialogActions classname="dropdown">
                     <select value={selectedTA} onChange={handleSelectChange}>
                         <option value="" disabled>Select a TA</option>
-                        {Object.entries(idNameMap).map(([user_id, name]) => (
-                            <option key={user_id} value={user_id}>{name}</option> //TA name is displayed but actual value for 'selectedTA' is user_id
+                        {Object.entries(idNameMap).map(([user_id, info]) => (
+                            <option key={user_id} value={user_id}>{getDisplayName(info, user_id)}</option> //TA name is displayed but actual value for 'selectedTA' is user_id
                         ))}
                     </select>
 
