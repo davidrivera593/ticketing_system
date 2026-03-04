@@ -1,5 +1,5 @@
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import { Typography, Select, MenuItem, FormControl, InputLabel, Box } from "@mui/material";
+//import { Typography, Select, MenuItem, FormControl, InputLabel, Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -18,6 +18,9 @@ import ShareTicket from "../../components/ShareTicket/ShareTicket";
 import TicketStatusIndicator from "../../components/TicketStatusIndicator/TicketStatusIndicator";
 import { issueTypeDisplay, generateTicketNumber } from "../../constants/IssueTypes";
 import "./TicketInfo.css";
+import { Typography, Select, MenuItem, FormControl, InputLabel, Box, Chip } from "@mui/material";
+
+
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 const TicketSubject = "Sponsor Isn’t Responding";
@@ -48,6 +51,9 @@ const TicketInfo = () => {
   const [allAssignedID, setAllAssignedID] = useState([]);
   const [SharedID, setSharedID] = useState([]);
   const [idToNameMap, setIdToNameMap] = useState({});
+  const assignedTAIds = allAssignedID.filter(
+    (id) => idToNameMap[id]?.role === "TA"
+  );
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -397,9 +403,22 @@ const TicketInfo = () => {
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>
                   ASSIGNED STAFF
                 </Typography>
-                <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
-                    {idToNameMap[AssignedID]?.name || 'Unassigned'}
-                </Typography>
+                {assignedTAIds.length > 0 ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1, mt: 0.5 }}>
+                    {assignedTAIds.map((taId) => (
+                      <Chip
+                        key={taId}
+                        label={idToNameMap[taId]?.name || `TA ${taId}`}
+                        size="small"
+                        sx={{ fontWeight: 500 }}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
+                    Unassigned
+                  </Typography>
+                )}
               </Box>
               
               <Box>
@@ -463,6 +482,7 @@ const TicketInfo = () => {
               <ConfirmReassign handleOpen={reassignOpen} handleClose={() => setReassignOpen(false)} ticketID={ticketId} oldTAID={AssignedID} idNameMap={idToNameMap} updateTA={(newTAID) => setAssignedID(newTAID)} />
 
               {/*Currently copies from Reassign, do not use yet */}
+              {/*It's probably fine to use, but test some more first before removing these comment*/}
               {(userType === "admin" || userType === "TA") && (
               <Button variant="outlined" onClick={() => setShareOpen(true)}>Share</Button>
               )}

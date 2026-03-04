@@ -4,6 +4,7 @@ import LayersIcon from "@mui/icons-material/Layers";
 import ListIcon from "@mui/icons-material/List";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
+import PeopleIcon from '@mui/icons-material/People';
 import {
   Drawer,
   List,
@@ -243,7 +244,6 @@ const SideBar = () => {
             zIndex: 1000,
           }}
         >
-
             {(userType === "student" || userType === "TA") && (
                 <CreateTicket
                     onClose={closeModal}

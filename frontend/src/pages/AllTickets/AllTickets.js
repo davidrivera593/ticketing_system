@@ -769,6 +769,7 @@ const AllTickets = () => {
                                   tickets={filteredTickets.filter(ticket => ticket.source === 'regular')}
                                   defaultView="list"
                                   onOpenTicket={(t) => navigate(`/ticketinfo?ticket=${t.ticket_id}`)}
+                                  enableShare={true}
                               />
                               {/* Student Tickets Pagination */}
                               {studentPagination.totalPages > 1 && (

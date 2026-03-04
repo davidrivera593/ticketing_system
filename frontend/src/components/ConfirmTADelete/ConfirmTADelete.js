@@ -14,6 +14,12 @@ const ConfirmTADelete = memo(({handleOpen, handleClose, ta, idNameMap, updateSta
     const [data, setData] = useState([]);
     const [error, setError] = useState(false);
     const token = Cookies.get("token");
+
+    const getDisplayName = (value, fallbackId) => {
+      if (typeof value === "string") return value;
+      if (value && typeof value === "object") return value.name || `User ${fallbackId}`;
+      return `User ${fallbackId}`;
+    };
     useEffect(() => { // Fetch ticket assignments when the pop up opens
       if (ta?.user_id) {
         fetchTicketAssignmentsByUserId(ta.user_id);
@@ -193,8 +199,8 @@ const ConfirmTADelete = memo(({handleOpen, handleClose, ta, idNameMap, updateSta
                         onChange={(event) => handleSelectChange(ticket.ticket_id, event)} 
                       >
                           <option value="" disabled>Select a TA</option>
-                          {Object.entries(idNameMap).map(([user_id, name]) => (
-                            <option key={user_id} value={user_id}>{name}</option> //TA name is displayed but actual value for 'selectedTA' is user_id
+                          {Object.entries(idNameMap).map(([user_id, info]) => (
+                            <option key={user_id} value={user_id}>{getDisplayName(info, user_id)}</option> //TA name is displayed but actual value for 'selectedTA' is user_id
                           ))}
                       </select>
                       <Button 
