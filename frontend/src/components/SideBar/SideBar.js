@@ -180,6 +180,22 @@ const SideBar = () => {
         </ListItemButton>
       )}
 
+          { userType === "TA" && (
+              <ListItemButton
+                  className="buttonStyle"
+                  selected={selectedPage === 5} // Assign a unique selectedPage index for "Escalated Tickets"
+                  onClick={() => {
+                      setSelectedPage(5);
+                      navigate("/escalatedticketsTA"); // Navigate to a new route for escalated tickets
+                  }}
+              >
+                  <ListItemIcon>
+                      <LayersIcon className="iconStyle" />
+                  </ListItemIcon>
+                  <ListItemText className="fontStyle" primary="Escalated Tickets" />
+              </ListItemButton>
+          )}
+
         <ListItemButton
           className="buttonStyle"
           selected={selectedPage === 2} // Assign a unique selectedPage index for "All Assignees"

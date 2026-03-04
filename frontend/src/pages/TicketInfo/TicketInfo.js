@@ -238,7 +238,7 @@ const TicketInfo = () => {
             map[user.user_id] = { name: user.name, role: 'TA' };
         });
         graderList.forEach(user => {
-            map[user.user_id] = { name: user.name, role: 'Grader' };
+            map[user.user_id] = { name: user.name, role: 'grader' };
         });
         return map;
     };
@@ -421,25 +421,38 @@ const TicketInfo = () => {
                   backgroundColor: theme.palette.background.paper,
                   padding: '0 4px'
                 }}>Status</InputLabel>
-                <Select value={ticketStatus} onChange={handleStatusChange} size="small" sx={{ 
-                  height: "40px"
-                }}>
-                  <MenuItem value="new">New</MenuItem>
-                  <MenuItem value="ongoing">Ongoing</MenuItem>
-                  <MenuItem value="resolved">Resolved</MenuItem>
-                </Select>
+                  <Select
+                      disabled={userType === 'student'} // Prevents students from changing status manually
+                      value={ticketStatus}
+                      onChange={handleStatusChange}
+                      size="small"
+                  >
+                      <MenuItem value="new">New</MenuItem>
+                      <MenuItem value="ongoing">Ongoing</MenuItem>
+                      <MenuItem value="resolved">Resolved</MenuItem>
+                  </Select>
               </FormControl>
+
+                {(userType === "admin" || userType === "TA") && (
+                    <>
+                        <Button variant="contained" onClick={() => setEditOpen(true)}>Edit Ticket</Button>
+                        <ConfirmEdit handleOpen={editOpen} handleClose={editPopupClose} onConfirmEdit={handleConfirmEdit} />
+                    </>
+                )}
+
+                {(userType === "admin" || userType === "TA" || userType === "grader") && (
+                    <Button variant="outlined" color="error" onClick={() => handleStatusChange({ target: { value: 'resolved' } })}>Close Ticket</Button>
+
+                )}
               
-              <Button variant="contained" onClick={() => setEditOpen(true)}>Edit Ticket</Button>
-              <ConfirmEdit handleOpen={editOpen} handleClose={editPopupClose} onConfirmEdit={handleConfirmEdit} />
-              
-              <Button variant="outlined" color="error" onClick={() => handleStatusChange({ target: { value: 'resolved' } })}>Close Ticket</Button>
-              
-              {userType === "TA" && ticketData.escalated === false && (
-                <Button variant="contained" color="warning" onClick={() => setEscalateOpen(true)}>Escalate Ticket</Button>
-              )}
-              <ConfirmEscalate handleOpen={escalateOpen} handleClose={() => setEscalateOpen(false)} ticketID={ticketId} />
-              
+
+                {(userType === "TA" || userType === "grader") && ticketData.escalated === false && (
+                    <>
+                        <Button variant="contained" color="warning" onClick={() => setEscalateOpen(true)}>Escalate Ticket</Button>
+                        <ConfirmEscalate handleOpen={escalateOpen} handleClose={() => setEscalateOpen(false)} ticketID={ticketId} />
+                    </>
+                )}
+
               {userType === "admin" && ticketData.escalated && (
                 <Button variant="contained" color="success" onClick={() => resolveEscalation()}>Resolve Escalation</Button>
               )}

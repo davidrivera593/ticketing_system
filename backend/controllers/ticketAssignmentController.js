@@ -13,14 +13,22 @@ exports.getAllTicketAssignments = async (req, res) => {
 };
 
 exports.getTicketAssignmentsByTicketId = async (req, res) => {
-  try {
-    const ticketAssignments = await TicketAssignment.findAll({
-      where: { ticket_id: req.params.ticket_id },
-    });
-    res.json(ticketAssignments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+     const { ticket_id } = req.params;
+    const { role, id: userId } = req.user;
+
+    try {
+        const ticket = await Ticket.findByPk(ticket_id);
+
+        const isStaff = role === 'admin' || role === 'TA' || role === 'grader';
+        if (!isStaff && ticket.student_id !== userId) {
+            return res.status(403).json({ error: "Access denied: You can only view assignments for your own tickets." });
+        }
+
+        const assignments = await TicketAssignment.findAll({ where: { ticket_id } });
+        res.json(assignments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
 exports.getTicketAssignmentsByUserId = async (req, res) => {

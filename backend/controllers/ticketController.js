@@ -9,15 +9,16 @@ const { Op } = require("sequelize");
 exports.getAllTickets = async (req, res) => {
   try {
     // Extract pagination parameters from query string
-    const { 
-      page = 1, 
-      limit = 10, 
-      status, 
-      priority, 
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      priority,
       team_id,
       assigned_to,
       sort,
-      hideResolved
+      hideResolved,
+      escalatedBy
     } = req.query;
 
     const pageNum = parseInt(page);
@@ -25,27 +26,34 @@ exports.getAllTickets = async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
 
     // Build where clause for filtering
-    const whereClause = {};
-    // Normalize status to lowercase (DB uses lowercase enum values)
-    const normalizedStatus = status ? status.toLowerCase() : undefined;
-    if (normalizedStatus) {
-      if (normalizedStatus === 'escalated') {
-        whereClause.escalated = true;
-      } else {
-        whereClause.status = normalizedStatus;
+      const whereClause = {};
+      const normalizedStatus = status ? status.toLowerCase() : undefined;
+
+      if (normalizedStatus) {
+          if (normalizedStatus === 'escalated') {
+              whereClause.escalated = true;
+          } else {
+              whereClause.status = normalizedStatus;
+          }
       }
-    }
-    if (priority) whereClause.priority = priority;
-    if (team_id) whereClause.team_id = team_id;
-    if (assigned_to) whereClause.assigned_to = assigned_to;
-    // Only apply hideResolved when there is no explicit status filter on the query
-    if (hideResolved === 'true' && typeof whereClause.status === 'undefined') {
-      whereClause.status = { [Op.ne]: 'resolved' };
-    }
+
+      // 2. Add the escalated_by filter to the DB query
+      // This matches the column name 'escalated_by' from your migration
+      if (escalatedBy) {
+          whereClause.escalated_by = escalatedBy;
+      }
+
+      if (priority) whereClause.priority = priority;
+      if (team_id) whereClause.team_id = team_id;
+      if (assigned_to) whereClause.assigned_to = assigned_to;
+
+      if (hideResolved === 'true' && typeof whereClause.status === 'undefined') {
+          whereClause.status = { [Op.ne]: 'resolved' };
+      }
 
     // Build order clause for sorting
     let orderClause = [['created_at', 'DESC']]; // Default: Most recent tickets first
-    
+
     if (sort) {
       switch (sort) {
         case 'newest':
@@ -72,41 +80,41 @@ exports.getAllTickets = async (req, res) => {
       offset: offset,
       order: orderClause,
       include: [
-        { 
-          model: User, 
-          as: "student", 
-          attributes: ["name", "email"] 
+        {
+          model: User,
+          as: "student",
+          attributes: ["name", "email"]
         }
       ]
     });
 
     // Get summary counts (all tickets, ignoring pagination but respecting filters)
     let totalTickets, openTickets, closedTickets, escalatedTickets;
-    
+
     try {
       totalTickets = await Ticket.count({ where: whereClause });
-      
-      openTickets = await Ticket.count({ 
-        where: { 
-          ...whereClause, 
-          status: { [Op.in]: ['new', 'ongoing'] } 
-        } 
+
+      openTickets = await Ticket.count({
+        where: {
+          ...whereClause,
+          status: { [Op.in]: ['new', 'ongoing'] }
+        }
       });
-      
-      closedTickets = await Ticket.count({ 
-        where: { 
-          ...whereClause, 
-          status: 'resolved' 
-        } 
+
+      closedTickets = await Ticket.count({
+        where: {
+          ...whereClause,
+          status: 'resolved'
+        }
       });
-      
-      escalatedTickets = await Ticket.count({ 
-        where: { 
-          ...whereClause, 
-          escalated: true 
-        } 
+
+      escalatedTickets = await Ticket.count({
+        where: {
+          ...whereClause,
+          escalated: true
+        }
       });
-      
+
     } catch (summaryError) {
       console.error('Error calculating summary counts:', summaryError);
       // Fallback to basic counts
@@ -596,17 +604,27 @@ exports.updateTicketStatus = async (req, res) => {
 };
 
 exports.escalateTicket = async (req, res) => {
-  try {
-    const ticket = await Ticket.findByPk(req.params.ticket_id);
-    if (ticket) {
-      await ticket.update({ escalated: true });
-      res.json(ticket);
-    } else {
-      res.status(404).json({ error: "Ticket not found" });
+    try {
+        const ticket = await Ticket.findByPk(req.params.ticket_id);
+
+        // 1. Extract the data sent from the frontend body
+        const { escalatedBy } = req.body;
+
+        if (ticket) {
+            // 2. Add 'escalated_by' to the update object
+            await ticket.update({
+                escalated: true,
+                escalated_by: escalatedBy
+            });
+
+            res.json(ticket);
+        } else {
+            res.status(404).json({ error: "Ticket not found" });
+        }
+    } catch (error) {
+        // Note: 516 is a non-standard HTTP status code, but keeping it as per your snippet
+        res.status(516).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(516).json({ error: error.message });
-  }
 };
 
 exports.deescalateTicket = async (req, res) => {

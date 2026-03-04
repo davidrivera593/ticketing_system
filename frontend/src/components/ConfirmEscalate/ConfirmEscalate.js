@@ -9,6 +9,8 @@ import TextField from '@mui/material/TextField';
 import { useTheme } from '@mui/material/styles';
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
+import { jwtDecode } from "jwt-decode";
+
 const ConfirmEscalate = ({handleOpen, handleClose, ticketID}) => {
     const theme = useTheme();
     const [userInput, setUserInput] = useState('');
@@ -44,9 +46,19 @@ const ConfirmEscalate = ({handleOpen, handleClose, ticketID}) => {
             setError(true);
         }
       }
-    
-    const handleEscalate = async (event) => {
-        try{
+
+    const handleEscalate = async () => {
+        try {
+            const token = Cookies.get("token");
+            if (!token) {
+                alert("Session expired. Please log in again.");
+                return;
+            }
+
+            // Extract the role as you defined
+            const decodedToken = jwtDecode(token);
+            const userType = decodedToken.role;
+
             const escalateResponse = await fetch(
                 `${baseURL}/api/tickets/${ticketID}/escalate`,
                 {
@@ -55,6 +67,11 @@ const ConfirmEscalate = ({handleOpen, handleClose, ticketID}) => {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+
+                    body: JSON.stringify({
+                        escalatedBy: userType,
+                        comments: userInput
+                    }),
                 }
             );
         
