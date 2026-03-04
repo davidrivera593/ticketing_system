@@ -558,6 +558,7 @@ const InstructorTickets = () => {
                                 tickets={studentTickets}
                                 defaultView="grid"
                                 onOpenTicket={openTicket}
+                                enableShare={true}
                             />
                             
                             {/* Student Tickets Pagination */}

@@ -1,4 +1,4 @@
-import { Avatar, Button, Chip, Typography, Box } from "@mui/material";
+import { Avatar, Button, Chip, Typography, Box, Checkbox } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import React, { useState } from "react";
 import TicketView from "./TicketView/TicketView"; // Import TicketView component
@@ -59,6 +59,9 @@ const TicketCard = ({
   teamName = defaultProps.teamName,
   sponsorName = defaultProps.sponsorName,
   createdAt = defaultProps.createdAt,
+  showCheckboxes = false,
+  isSelected = false,
+  onToggleSelect = () => {},
 }) => {
   const theme = useTheme();
   const [showTicketView, setShowTicketView] = useState(false);
@@ -88,6 +91,9 @@ const TicketCard = ({
   return (
     <>
       <Box
+        onClick={() => {
+          if (showCheckboxes) onToggleSelect();
+        }}
         sx={{
           display: "flex",
           flexDirection: "column",
@@ -103,8 +109,23 @@ const TicketCard = ({
           boxSizing: "border-box",
           border: 1,
           borderColor: theme.palette.divider,
+          cursor: showCheckboxes ? "pointer" : "default",
+          backgroundColor: isSelected ? "action.selected" : theme.palette.background.paper,
+          border: isSelected ? 2 : 1,
+          borderColor: isSelected ? "primary.main" : theme.palette.divider,
         }}
       >
+        
+        {showCheckboxes && (
+          <Checkbox
+            checked={isSelected}
+            onChange={() => onToggleSelect()}
+            onClick={(e) => e.stopPropagation()}
+            size="small"
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          />
+        )}
+
         {/* HEADER */}
         <div
           style={{
