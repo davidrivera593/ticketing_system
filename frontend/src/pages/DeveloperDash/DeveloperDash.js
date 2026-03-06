@@ -64,7 +64,7 @@ const DeveloperDash = () => {
 
         <section className="developer-report-card">
           <h2>Bug Reports</h2>
-          <p>Bug report data from the bugreports table appears below.</p>
+          <p>Current Bugs/Issues with the ticketing system.</p>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
