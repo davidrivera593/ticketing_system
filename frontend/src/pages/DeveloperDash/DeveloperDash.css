@@ -44,6 +44,15 @@
   border-collapse: collapse;
 }
 
+.developer-report-row {
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.developer-report-row:hover {
+  background: #f5f5f5;
+}
+
 .developer-report-card th,
 .developer-report-card td {
   font-size: 1rem;
@@ -73,5 +82,21 @@
 
   .developer-report-card p {
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .developer-main {
+    margin-left: 0;
+    padding: 24px 16px 32px;
+  }
+
+  .developer-report-card {
+    padding: 18px;
+    overflow-x: auto;
+  }
+
+  .developer-report-card table {
+    min-width: 680px;
   }
 }
