@@ -28,7 +28,7 @@ module.exports = (app) => {
 
         return callback(new Error(`Origin ${origin} not allowed by CORS`));
       },
-      methods: ["GET", "POST", "PUT", "DELETE"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       credentials: true, // Enable this for sessions/auth
     })
   );

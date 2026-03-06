@@ -182,19 +182,21 @@ const SideBar = () => {
           </ListItemButton>
         )}
 
-        <ListItemButton
-          className="buttonStyle"
-          selected={selectedPage === 2} // Assign a unique selectedPage index for "All Assignees"
-          onClick={() => {
-            setSelectedPage(2);
-            navigate("/allassignees"); // Navigate to a new route for all assignees
-          }}
-        >
-          <ListItemIcon>
-            <ListIcon className="iconStyle" />
-          </ListItemIcon>
-          <ListItemText className="fontStyle" primary="All Assignees" />
-        </ListItemButton>
+        {userType !== "developer" && (
+          <ListItemButton
+            className="buttonStyle"
+            selected={selectedPage === 2} // Assign a unique selectedPage index for "All Assignees"
+            onClick={() => {
+              setSelectedPage(2);
+              navigate("/allassignees"); // Navigate to a new route for all assignees
+            }}
+          >
+            <ListItemIcon>
+              <ListIcon className="iconStyle" />
+            </ListItemIcon>
+            <ListItemText className="fontStyle" primary="All Assignees" />
+          </ListItemButton>
+        )}
 
         {(userType === "student" || userType === "TA") && (
           <ListItemButton

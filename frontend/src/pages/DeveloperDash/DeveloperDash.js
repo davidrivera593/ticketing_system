@@ -73,6 +73,11 @@ const formatEnumLabel = (value) =>
         .join(" ")
     : "Unknown";
 
+const getReporterDisplayName = (report, reporterNames) =>
+  report?.reporter?.name ||
+  reporterNames[report?.reporter_id] ||
+  (report?.reporter_id != null ? "Loading..." : "-");
+
 const BugReportCard = ({
   report,
   draftStatus,
@@ -84,6 +89,7 @@ const BugReportCard = ({
   onDraftChange,
   onSave,
   formatCreatedAt,
+  reporterNames,
 }) => {
   const theme = useTheme();
 
@@ -231,9 +237,11 @@ const BugReportCard = ({
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                Reporter ID
+                Reporter
               </Typography>
-              <Typography variant="body2">{report.reporter_id ?? "-"}</Typography>
+              <Typography variant="body2">
+                {getReporterDisplayName(report, reporterNames)}
+              </Typography>
             </Box>
 
             <Box>
@@ -273,6 +281,7 @@ const DeveloperDash = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [reporterNames, setReporterNames] = useState({});
   const [draftStatus, setDraftStatus] = useState("");
   const [draftSeverity, setDraftSeverity] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -307,7 +316,48 @@ const DeveloperDash = () => {
         }
 
         const payload = await response.json();
-        setBugReports(Array.isArray(payload?.data) ? payload.data : []);
+        const reports = Array.isArray(payload?.data) ? payload.data : [];
+        setBugReports(reports);
+
+        const reporterIds = [
+          ...new Set(
+            reports
+              .map((report) => report.reporter_id)
+              .filter((reporterId) => reporterId != null)
+          ),
+        ];
+
+        const namesById = {};
+        await Promise.all(
+          reporterIds.map(async (reporterId) => {
+            try {
+              const userResponse = await fetch(
+                `${process.env.REACT_APP_API_BASE_URL || ""}/api/users/${reporterId}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  credentials: "include",
+                }
+              );
+
+              if (!userResponse.ok) {
+                return;
+              }
+
+              const userPayload = await userResponse.json();
+              if (userPayload?.name) {
+                namesById[reporterId] = userPayload.name;
+              }
+            } catch (userError) {
+              console.error(`Failed to load reporter ${reporterId}:`, userError);
+            }
+          })
+        );
+
+        setReporterNames(namesById);
       } catch (err) {
         setError(err.message || "Failed to load bug reports.");
       } finally {
@@ -433,7 +483,7 @@ const DeveloperDash = () => {
                 <th>subject</th>
                 <th>status</th>
                 <th>severity</th>
-                <th>reporter_id</th>
+                <th>reporter</th>
                 <th>createdAt</th>
               </tr>
             </thead>
@@ -465,7 +515,7 @@ const DeveloperDash = () => {
                     <td>{report.subject || "-"}</td>
                     <td>{report.status || "-"}</td>
                     <td>{report.severity || "-"}</td>
-                    <td>{report.reporter_id ?? "-"}</td>
+                    <td>{getReporterDisplayName(report, reporterNames)}</td>
                     <td>{formatCreatedAt(report.createdAt || report.created_at)}</td>
                   </tr>
                 ))}
@@ -484,6 +534,7 @@ const DeveloperDash = () => {
           onDraftChange={handleDraftChange}
           onSave={handleSaveReport}
           formatCreatedAt={formatCreatedAt}
+          reporterNames={reporterNames}
         />
       </main>
     </div>
