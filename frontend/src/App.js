@@ -39,6 +39,8 @@ import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
 import GraderTickets from "./pages/GraderTickets/GraderTickets";
 import GraderSettings from "./pages/Settings/GraderSettings";
+import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
+
 
 function App() {
   return (
@@ -104,6 +106,8 @@ function App() {
               <Route path="/tasettings" element={<TASettings />} />
               <Route path="/instructortickets" element={<InstructorTickets />} />
               <Route path="/TaRequestTickets" element={<TaRequestTickets />} />
+              <Route path="/escalatedticketsTA" element={<EscalatedTicketsTA />} />
+
           </Route>
 
           {/* --- Grader Pages--- */}
@@ -111,6 +115,7 @@ function App() {
               <Route path="/gradersettings" element={<GraderSettings />} />
               <Route path="/graderdash" element={<GraderDash />} />
               <Route path="/gradertickets" element={<GraderTickets />} />
+
           </Route>
 
       </Route>

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const TicketAssignment = require("../models/TicketAssignment");
 // minor change for git tracking
 const authMiddleware = {
   verifyToken: (req, res, next) => {
@@ -67,6 +68,21 @@ isAdmin: (req, res, next) => {
             res.status(403).json({ error: "Forbidden: Staff access required" });
         }
     },
+    isTAOrGrader: (req, res, next) => {
+        if (req.user && (req.user.role === "TA" || req.user.role === "grader")) {
+            next();
+        } else {
+            res.status(403).json({ error: "Forbidden" });
+        }
+    },
+    isStaffOrStudent: (req, res, next) => {
+        const staffRoles = ["admin", "TA", "grader", "student"];
+        if (req.user && staffRoles.includes(req.user.role)) {
+            next(); // Access granted
+        } else {
+            res.status(403).json({ error: "Forbidden: Staff access required" });
+        }
+    },
   canViewTAProfile: (req, res, next) => {
     const requestedUserId = parseInt(req.params.user_id);
     const requestingUserId = req.user.id;
@@ -128,6 +144,18 @@ isAdmin: (req, res, next) => {
           return res.status(403).json({ error: "Forbidden: You are not assigned to this ticket" });
         }
       }
+
+        if (userRole === "grader") {
+            const assignment = await TicketAssignment.findOne({
+                where: { ticket_id: ticketId, user_id: userId }
+            });
+
+            if (assignment) {
+                return next();
+            } else {
+                return res.status(403).json({ error: "Forbidden: You are not assigned to this ticket" });
+            }
+        }
       
       res.status(403).json({ error: "Forbidden: Access denied" });
     } catch (error) {
