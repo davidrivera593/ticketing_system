@@ -62,10 +62,46 @@ const AllTickets = () => {
 
   const [studentTickets, setStudentTickets] = useState([]);
   const [taTickets, setTaTickets] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
 
   useEffect(() => {
+    const savedFilters = sessionStorage.getItem('allTickets_filters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      setActiveFilters(filters.activeFilters || {
+        sort: null,
+        status: null,
+        source: null,
+        search: "",
+        teamNameSearch: "",
+      });
+      setHideResolved(filters.hideResolved ?? true);
+      setStudentCurrentPage(filters.studentCurrentPage || 1);
+      setStudentItemsPerPage(filters.studentItemsPerPage || 10);
+      setTaCurrentPage(filters.taCurrentPage || 1);
+      setTaItemsPerPage(filters.taItemsPerPage || 10);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const filters = {
+      activeFilters,
+      hideResolved,
+      studentCurrentPage,
+      studentItemsPerPage,
+      taCurrentPage,
+      taItemsPerPage,
+    };
+    sessionStorage.setItem('allTickets_filters', JSON.stringify(filters));
+  }, [activeFilters, hideResolved, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, isInitialized]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
     fetchTickets();
-  }, [hideResolved]);
+  }, [hideResolved, isInitialized]);
 
 
 
