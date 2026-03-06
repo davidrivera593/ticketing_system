@@ -805,6 +805,7 @@ const AllTickets = () => {
                                   tickets={filteredTickets.filter(ticket => ticket.source === 'ta')}
                                   defaultView="list"
                                   onOpenTicket={(t) => navigate(`/taticketinfo?ticket=${t.ticket_id}`)}
+                                  enableShare={true}
                               />
                               {/* TA Tickets Pagination */}
                               {taPagination.totalPages > 1 && (
