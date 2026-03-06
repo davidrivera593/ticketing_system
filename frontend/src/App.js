@@ -39,6 +39,7 @@ import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
 import GraderTickets from "./pages/GraderTickets/GraderTickets";
 import GraderSettings from "./pages/Settings/GraderSettings";
+import DeveloperDash from "./pages/DeveloperDash/DeveloperDash";
 import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
 
 
@@ -51,6 +52,27 @@ function App() {
       <Route path="/registration" element={<Registration />} />
       <Route path="/resetpassword" element={<ResetPassword />} />
       <Route path="/requestreset" element={<RequestReset />} />
+      
+      {/* Change password - protected but without navbar (forced flow) */}
+      <Route 
+        path="/change-password" 
+        element={
+          <ProtectedRoute
+            element={<ChangePassword />}
+            authorizedRoles={["admin", "student", "TA", "grader", "developer"]}
+          />
+        } 
+      />
+
+      <Route
+        path="/developerdash"
+        element={
+          <ProtectedRoute
+            element={<DeveloperDash />}
+            authorizedRoles={["developer"]}
+          />
+        }
+      />
 
       {/*Verify that user is logged in before rendering any of these routes*/}
       <Route
