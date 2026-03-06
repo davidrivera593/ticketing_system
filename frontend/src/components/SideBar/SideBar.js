@@ -198,7 +198,37 @@ const SideBar = () => {
           </ListItemButton>
         )}
 
-        {(userType === "student" || userType === "TA") && (
+          { userType === "TA" && (
+              <ListItemButton
+                  className="buttonStyle"
+                  selected={selectedPage === 5} // Assign a unique selectedPage index for "Escalated Tickets"
+                  onClick={() => {
+                      setSelectedPage(5);
+                      navigate("/escalatedticketsTA"); // Navigate to a new route for escalated tickets
+                  }}
+              >
+                  <ListItemIcon>
+                      <LayersIcon className="iconStyle" />
+                  </ListItemIcon>
+                  <ListItemText className="fontStyle" primary="Escalated Tickets" />
+              </ListItemButton>
+          )}
+
+        <ListItemButton
+          className="buttonStyle"
+          selected={selectedPage === 2} // Assign a unique selectedPage index for "All Assignees"
+          onClick={() => {
+            setSelectedPage(2);
+            navigate("/allassignees"); // Navigate to a new route for all assignees
+          }}
+        >
+          <ListItemIcon>
+            <ListIcon className="iconStyle" />
+          </ListItemIcon>
+          <ListItemText className="fontStyle" primary="All Assignees" />
+        </ListItemButton>
+
+        { (userType === "student" || userType === "TA") && (
           <ListItemButton
             className="buttonStyle"
             selected={selectedPage === 3}

@@ -65,7 +65,7 @@ router.put(
 router.put(
   "/:ticket_id/escalate",
   authMiddleware.verifyToken,
-  authMiddleware.isTA,
+  authMiddleware.isTAOrGrader,
   ticketController.escalateTicket
 );
 router.put(

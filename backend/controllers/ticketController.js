@@ -2,25 +2,23 @@ const Ticket = require("../models/Ticket");
 const User = require("../models/User");
 const Team = require("../models/Team");
 const Communication = require("../models/Communication"); 
+const sendEmail = require('../services/emailService');
 const TicketAssignment = require("../models/TicketAssignment");
-const {
-  notifyRegularTicketStatusChanged,
-  notifyRegularTicketEscalationChanged,
-} = require("../services/ticketNotificationService");
 const { Op } = require("sequelize");
 
 exports.getAllTickets = async (req, res) => {
   try {
     // Extract pagination parameters from query string
-    const { 
-      page = 1, 
-      limit = 10, 
-      status, 
-      priority, 
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      priority,
       team_id,
       assigned_to,
       sort,
-      hideResolved
+      hideResolved,
+      escalatedBy
     } = req.query;
 
     const pageNum = parseInt(page);
@@ -28,27 +26,34 @@ exports.getAllTickets = async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
 
     // Build where clause for filtering
-    const whereClause = {};
-    // Normalize status to lowercase (DB uses lowercase enum values)
-    const normalizedStatus = status ? status.toLowerCase() : undefined;
-    if (normalizedStatus) {
-      if (normalizedStatus === 'escalated') {
-        whereClause.escalated = true;
-      } else {
-        whereClause.status = normalizedStatus;
+      const whereClause = {};
+      const normalizedStatus = status ? status.toLowerCase() : undefined;
+
+      if (normalizedStatus) {
+          if (normalizedStatus === 'escalated') {
+              whereClause.escalated = true;
+          } else {
+              whereClause.status = normalizedStatus;
+          }
       }
-    }
-    if (priority) whereClause.priority = priority;
-    if (team_id) whereClause.team_id = team_id;
-    if (assigned_to) whereClause.assigned_to = assigned_to;
-    // Only apply hideResolved when there is no explicit status filter on the query
-    if (hideResolved === 'true' && typeof whereClause.status === 'undefined') {
-      whereClause.status = { [Op.ne]: 'resolved' };
-    }
+
+      // 2. Add the escalated_by filter to the DB query
+      // This matches the column name 'escalated_by' from your migration
+      if (escalatedBy) {
+          whereClause.escalated_by = escalatedBy;
+      }
+
+      if (priority) whereClause.priority = priority;
+      if (team_id) whereClause.team_id = team_id;
+      if (assigned_to) whereClause.assigned_to = assigned_to;
+
+      if (hideResolved === 'true' && typeof whereClause.status === 'undefined') {
+          whereClause.status = { [Op.ne]: 'resolved' };
+      }
 
     // Build order clause for sorting
     let orderClause = [['created_at', 'DESC']]; // Default: Most recent tickets first
-    
+
     if (sort) {
       switch (sort) {
         case 'newest':
@@ -75,41 +80,41 @@ exports.getAllTickets = async (req, res) => {
       offset: offset,
       order: orderClause,
       include: [
-        { 
-          model: User, 
-          as: "student", 
-          attributes: ["name", "email"] 
+        {
+          model: User,
+          as: "student",
+          attributes: ["name", "email"]
         }
       ]
     });
 
     // Get summary counts (all tickets, ignoring pagination but respecting filters)
     let totalTickets, openTickets, closedTickets, escalatedTickets;
-    
+
     try {
       totalTickets = await Ticket.count({ where: whereClause });
-      
-      openTickets = await Ticket.count({ 
-        where: { 
-          ...whereClause, 
-          status: { [Op.in]: ['new', 'ongoing'] } 
-        } 
+
+      openTickets = await Ticket.count({
+        where: {
+          ...whereClause,
+          status: { [Op.in]: ['new', 'ongoing'] }
+        }
       });
-      
-      closedTickets = await Ticket.count({ 
-        where: { 
-          ...whereClause, 
-          status: 'resolved' 
-        } 
+
+      closedTickets = await Ticket.count({
+        where: {
+          ...whereClause,
+          status: 'resolved'
+        }
       });
-      
-      escalatedTickets = await Ticket.count({ 
-        where: { 
-          ...whereClause, 
-          escalated: true 
-        } 
+
+      escalatedTickets = await Ticket.count({
+        where: {
+          ...whereClause,
+          escalated: true
+        }
       });
-      
+
     } catch (summaryError) {
       console.error('Error calculating summary counts:', summaryError);
       // Fallback to basic counts
@@ -497,31 +502,7 @@ exports.updateTicket = async (req, res) => {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    const previousStatus = ticket.status;
-    const previousEscalated = ticket.escalated;
-
     await ticket.update(req.body);
-
-    if (Object.prototype.hasOwnProperty.call(req.body, "status")) {
-      await notifyRegularTicketStatusChanged({
-        ticketId: ticket.ticket_id,
-        previousStatus,
-        currentStatus: ticket.status,
-        actorUserId: req.user?.id,
-      });
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(req.body, "escalated") &&
-      previousEscalated !== ticket.escalated
-    ) {
-      await notifyRegularTicketEscalationChanged({
-        ticketId: ticket.ticket_id,
-        isEscalated: ticket.escalated,
-        actorUserId: req.user?.id,
-      });
-    }
-
     res.json(ticket);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -561,31 +542,8 @@ exports.editTicket = async (req, res) => {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    const previousStatus = ticket.status;
-    const previousEscalated = ticket.escalated;
-
     //Update ticket with request body data
     await ticket.update(req.body);
-
-    if (Object.prototype.hasOwnProperty.call(req.body, "status")) {
-      await notifyRegularTicketStatusChanged({
-        ticketId: ticket.ticket_id,
-        previousStatus,
-        currentStatus: ticket.status,
-        actorUserId: req.user?.id,
-      });
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(req.body, "escalated") &&
-      previousEscalated !== ticket.escalated
-    ) {
-      await notifyRegularTicketEscalationChanged({
-        ticketId: ticket.ticket_id,
-        isEscalated: ticket.escalated,
-        actorUserId: req.user?.id,
-      });
-    }
 
     res.status(200).json({
       message: "Ticket updated successfully",
@@ -604,16 +562,39 @@ exports.updateTicketStatus = async (req, res) => {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    const previousStatus = ticket.status;
     await ticket.update({ status: req.body.status });
     const updatedTicket = await Ticket.findByPk(req.params.ticket_id);
 
-    await notifyRegularTicketStatusChanged({
-      ticketId: ticket.ticket_id,
-      previousStatus,
-      currentStatus: updatedTicket.status,
-      actorUserId: req.user?.id,
-    });
+    const student = await User.findByPk(ticket.student_id);
+
+    if (!student || !student.email) {
+      console.warn("Student not found or missing email.");
+    } else if (!student.notifications_enabled) {
+      console.log(`Email not sent — notifications disabled for ${student.email}`);
+    } else {
+      const isEscalated = req.body.status.toLowerCase() === 'escalated';
+
+      const subject = isEscalated
+        ? 'Your Ticket Has Been Escalated'
+        : 'Ticket Status Updated';
+
+      const body = isEscalated
+        ? `Your ticket (ID: ${ticket.ticket_id}) has been escalated and is under review.`
+        : `Your ticket (ID: ${ticket.ticket_id}) has been updated to "${req.body.status}".`;
+
+      //await sendEmail(student.email, subject, body);
+
+      if (isEscalated) {
+        // const instructorEmails = ['instructor1@asu.edu', 'instructor2@asu.edu'];
+        // for (const email of instructorEmails) {
+        //   await sendEmail(
+        //     email,
+        //     `Ticket Escalated: ID ${ticket.ticket_id}`,
+        //     `Ticket ID ${ticket.ticket_id} has been escalated.\n\nStudent: ${student.name} (${student.email})`
+        //   );
+        // }
+      }
+    }
 
     res.json(updatedTicket);
   } catch (error) {
@@ -623,44 +604,34 @@ exports.updateTicketStatus = async (req, res) => {
 };
 
 exports.escalateTicket = async (req, res) => {
-  try {
-    const ticket = await Ticket.findByPk(req.params.ticket_id);
-    if (ticket) {
-      const previousEscalated = ticket.escalated;
-      await ticket.update({ escalated: true });
+    try {
+        const ticket = await Ticket.findByPk(req.params.ticket_id);
 
-      if (!previousEscalated) {
-        await notifyRegularTicketEscalationChanged({
-          ticketId: ticket.ticket_id,
-          isEscalated: true,
-          actorUserId: req.user?.id,
-        });
-      }
+        // 1. Extract the data sent from the frontend body
+        const { escalatedBy } = req.body;
 
-      res.json(ticket);
-    } else {
-      res.status(404).json({ error: "Ticket not found" });
+        if (ticket) {
+            // 2. Add 'escalated_by' to the update object
+            await ticket.update({
+                escalated: true,
+                escalated_by: escalatedBy
+            });
+
+            res.json(ticket);
+        } else {
+            res.status(404).json({ error: "Ticket not found" });
+        }
+    } catch (error) {
+        // Note: 516 is a non-standard HTTP status code, but keeping it as per your snippet
+        res.status(516).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(516).json({ error: error.message });
-  }
 };
 
 exports.deescalateTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByPk(req.params.ticket_id);
     if (ticket) {
-      const previousEscalated = ticket.escalated;
       await ticket.update({ escalated: false });
-
-      if (previousEscalated) {
-        await notifyRegularTicketEscalationChanged({
-          ticketId: ticket.ticket_id,
-          isEscalated: false,
-          actorUserId: req.user?.id,
-        });
-      }
-
       res.json(ticket);
     } else {
       res.status(404).json({ error: "Ticket not found" });

@@ -53,6 +53,10 @@ const Ticket = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+      escalated_by: {
+          type: DataTypes.STRING,
+          allowNull: true,
+      },
     // asu_id: {
     //   type: DataTypes.STRING(10),
     //   allowNull: false,
