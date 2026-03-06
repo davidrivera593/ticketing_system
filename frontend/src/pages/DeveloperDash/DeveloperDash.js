@@ -15,7 +15,7 @@ import Cookies from "js-cookie";
 import "./DeveloperDash.css";
 import SideBar from "../../components/SideBar/SideBar";
 
-const STATUS_OPTIONS = ["open", "triaged", "in_progress", "resolved", "closed"];
+const STATUS_OPTIONS = ["open", "triaged", "in_progress", "resolved"];
 const SEVERITY_OPTIONS = ["low", "medium", "high", "critical"];
 
 const statusChipStyles = {
@@ -100,6 +100,7 @@ const BugReportCard = ({
   const statusStyle = statusChipStyles[normalizedStatus] || statusChipStyles.unknown;
   const severityStyle =
     severityChipStyles[normalizedSeverity] || severityChipStyles.unknown;
+  const isClosed = (report.status || "").toLowerCase() === "closed";
   const hasChanges =
     draftStatus !== (report.status || "open") ||
     draftSeverity !== (report.severity || "low");
@@ -170,6 +171,11 @@ const BugReportCard = ({
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25 }}>
           {saveError && <Alert severity="error">{saveError}</Alert>}
           {saveSuccess && <Alert severity="success">{saveSuccess}</Alert>}
+          {isClosed && (
+            <Alert severity="info">
+              This bug report is closed. Status and severity are locked.
+            </Alert>
+          )}
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
@@ -185,6 +191,7 @@ const BugReportCard = ({
             onChange={(event) => onDraftChange("status", event.target.value)}
             size="small"
             fullWidth
+            disabled={isClosed}
           >
             {STATUS_OPTIONS.map((option) => (
               <MenuItem key={option} value={option}>
@@ -207,6 +214,7 @@ const BugReportCard = ({
             onChange={(event) => onDraftChange("severity", event.target.value)}
             size="small"
             fullWidth
+            disabled={isClosed}
           >
             {SEVERITY_OPTIONS.map((option) => (
               <MenuItem key={option} value={option}>
@@ -257,7 +265,7 @@ const BugReportCard = ({
           <Button
             variant="contained"
             disableElevation
-            disabled={!hasChanges || isSaving}
+            disabled={isClosed || !hasChanges || isSaving}
             onClick={onSave}
             sx={{
               backgroundColor: theme.palette.primary.main,

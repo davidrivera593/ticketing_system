@@ -1,10 +1,28 @@
 const cors = require("cors");
+const { Op } = require("sequelize");
 const sequelize = require("./db");
 const express = require("express");
 const path = require("path");
 const httplogger = require("../middleware/httplogger");
+const { BugReport } = require("../models");
 
 const FRONTEND_BUILD_PATH = path.join(__dirname, "../../frontend/build");
+const AUTO_CLOSE_INTERVAL_MS = 60 * 60 * 1000;
+const AUTO_CLOSE_DELAY_MS = 24 * 60 * 60 * 1000;
+
+const autoCloseResolvedBugReports = async () => {
+  await BugReport.update(
+    { status: "closed" },
+    {
+      where: {
+        status: "resolved",
+        updatedAt: {
+          [Op.lte]: new Date(Date.now() - AUTO_CLOSE_DELAY_MS),
+        },
+      },
+    }
+  );
+};
 
 module.exports = (app) => {
   // Setup CORS
@@ -48,6 +66,14 @@ module.exports = (app) => {
     .then(() => {
       console.log("Database connected...");
       return sequelize.sync(); // Syncs models with the database
+    })
+    .then(async () => {
+      await autoCloseResolvedBugReports();
+      setInterval(() => {
+        autoCloseResolvedBugReports().catch((err) => {
+          console.error("Failed to auto-close resolved bug reports:", err);
+        });
+      }, AUTO_CLOSE_INTERVAL_MS);
     })
     .catch((err) => {
       console.error("Unable to connect to the database:", err);

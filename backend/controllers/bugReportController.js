@@ -8,6 +8,23 @@ const reporterInclude = {
   as: "reporter",
   attributes: ["user_id", "name", "email"],
 };
+const AUTO_CLOSE_DELAY_MS = 24 * 60 * 60 * 1000;
+
+const shouldAutoClose = (row) => {
+  if (!row || row.status !== "resolved") return false;
+  const resolvedAt = new Date(row.updatedAt);
+  if (Number.isNaN(resolvedAt.getTime())) return false;
+  return Date.now() - resolvedAt.getTime() >= AUTO_CLOSE_DELAY_MS;
+};
+
+const autoCloseBugReport = async (row) => {
+  if (!shouldAutoClose(row)) return row;
+  await row.update({ status: "closed" });
+  return row;
+};
+
+const autoCloseBugReports = async (rows) =>
+  Promise.all(rows.map(async (row) => autoCloseBugReport(row)));
 
 const createSchema = Joi.object({
   subject: Joi.string().trim().max(255).required(),
@@ -19,7 +36,7 @@ const updateSchema = Joi.object({
   subject: Joi.string().trim().max(255),
   description: Joi.string().trim().max(10000),
   severity: Joi.string().valid("low", "medium", "high", "critical"),
-  status: Joi.string().valid("open", "triaged", "in_progress", "resolved", "closed"),
+  status: Joi.string().valid("open", "triaged", "in_progress", "resolved"),
 }).min(1).unknown(false);
 
 exports.create = async (req, res) => {
@@ -67,6 +84,7 @@ exports.list = async (req, res) => {
       include: [reporterInclude],
       order: [["createdAt", "DESC"]],
     });
+    await autoCloseBugReports(rows);
 
     return res.json({ ok: true, data: rows });
   } catch (e) {
@@ -82,6 +100,7 @@ exports.getOne = async (req, res) => {
 
     const row = await BugReport.findByPk(id, { include: [reporterInclude] });
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
+    await autoCloseBugReport(row);
 
     return res.json({ ok: true, data: row });
   } catch (e) {
@@ -100,6 +119,14 @@ exports.update = async (req, res) => {
 
     const row = await BugReport.findByPk(id);
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
+    await autoCloseBugReport(row);
+
+    if (row.status === "closed") {
+      return res.status(400).json({
+        ok: false,
+        error: "Closed bug reports cannot be edited.",
+      });
+    }
 
     const updates = {};
     for (const k of Object.keys(value)) {
