@@ -59,6 +59,20 @@
   padding: 15px 14px;
   border-bottom: 1px solid #d4d4d4;
   text-align: left;
+  vertical-align: middle;
+}
+
+.developer-report-card th {
+  text-transform: capitalize;
+  color: #4a4a4a;
+  font-weight: 700;
+}
+
+.developer-table-chip {
+  font-weight: 700;
+  min-width: 110px;
+  justify-content: center;
+  border-radius: 999px;
 }
 
 .developer-empty-row {

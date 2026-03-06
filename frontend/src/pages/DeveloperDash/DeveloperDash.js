@@ -68,7 +68,10 @@ function stringAvatar(name = "Bug Report") {
 const formatEnumLabel = (value) =>
   value
     ? value
-        .split("_")
+        .toString()
+        .replaceAll("_", " ")
+        .split(" ")
+        .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ")
     : "Unknown";
@@ -77,6 +80,11 @@ const getReporterDisplayName = (report, reporterNames) =>
   report?.reporter?.name ||
   reporterNames[report?.reporter_id] ||
   (report?.reporter_id != null ? "Loading..." : "-");
+
+const formatDisplayValue = (value) => {
+  if (value == null || value === "") return "-";
+  return formatEnumLabel(value);
+};
 
 const BugReportCard = ({
   report,
@@ -520,10 +528,27 @@ const DeveloperDash = () => {
                     className="developer-report-row"
                     onClick={() => handleOpenReport(report)}
                   >
-                    <td>{report.subject || "-"}</td>
-                    <td>{report.status || "-"}</td>
-                    <td>{report.severity || "-"}</td>
-                    <td>{getReporterDisplayName(report, reporterNames)}</td>
+                    <td>{formatDisplayValue(report.subject)}</td>
+                    <td>
+                      <Chip
+                        label={formatDisplayValue(report.status)}
+                        size="small"
+                        className="developer-table-chip"
+                        sx={statusChipStyles[(report.status || "unknown").toLowerCase()] || statusChipStyles.unknown}
+                      />
+                    </td>
+                    <td>
+                      <Chip
+                        label={formatDisplayValue(report.severity)}
+                        size="small"
+                        className="developer-table-chip"
+                        sx={
+                          severityChipStyles[(report.severity || "unknown").toLowerCase()] ||
+                          severityChipStyles.unknown
+                        }
+                      />
+                    </td>
+                    <td>{formatDisplayValue(getReporterDisplayName(report, reporterNames))}</td>
                     <td>{formatCreatedAt(report.createdAt || report.created_at)}</td>
                   </tr>
                 ))}
