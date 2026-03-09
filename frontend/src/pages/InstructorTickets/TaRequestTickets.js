@@ -34,7 +34,7 @@ const TaRequestTickets = () => {
     const [loading, setLoading] = useState(true);
     
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(1000);
     const [pagination, setPagination] = useState({
         totalItems: 0,
         totalPages: 1,
@@ -200,7 +200,7 @@ const TaRequestTickets = () => {
                 />
                 
                 {/* Pagination */}
-                {pagination.totalPages > 1 && (
+                {false && (
                     <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
                         <Pagination
                             currentPage={currentPage}
