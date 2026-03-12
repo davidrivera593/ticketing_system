@@ -214,7 +214,7 @@ const SideBar = () => {
               </ListItemButton>
           )}
 
-        <ListItemButton
+        {/* <ListItemButton
           className="buttonStyle"
           selected={selectedPage === 2} // Assign a unique selectedPage index for "All Assignees"
           onClick={() => {
@@ -226,7 +226,7 @@ const SideBar = () => {
             <ListIcon className="iconStyle" />
           </ListItemIcon>
           <ListItemText className="fontStyle" primary="All Assignees" />
-        </ListItemButton>
+        </ListItemButton> */}
 
         { (userType === "student" || userType === "TA") && (
           <ListItemButton
