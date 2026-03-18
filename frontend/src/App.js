@@ -35,6 +35,7 @@ import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
+import FAQ from "./pages/FAQ/FAQ";
 import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
 import GraderTickets from "./pages/GraderTickets/GraderTickets";
@@ -94,6 +95,7 @@ function App() {
               <Route path="/instructorprofile" element={<InstructorProfile />} />
               <Route path="/mytickets" element={<MyTickets />} />
               <Route path="/bug-report" element={<BugReportPage />} />
+              <Route path="/help/faq" element={<FAQ />} />
           </Route>
 
           <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
