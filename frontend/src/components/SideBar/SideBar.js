@@ -1,5 +1,6 @@
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import LayersIcon from "@mui/icons-material/Layers";
 import ListIcon from "@mui/icons-material/List";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -227,6 +228,20 @@ const SideBar = () => {
           </ListItemIcon>
           <ListItemText className="fontStyle" primary="All Assignees" />
         </ListItemButton> */}
+
+        <ListItemButton
+          className="buttonStyle"
+          selected={selectedPage === 8}
+          onClick={() => {
+            setSelectedPage(8);
+            navigate("/help/faq");
+          }}
+        >
+          <ListItemIcon>
+            <HelpOutlineIcon className="iconStyle" />
+          </ListItemIcon>
+          <ListItemText className="fontStyle" primary="Help / FAQ" />
+        </ListItemButton>
 
         { (userType === "student" || userType === "TA") && (
           <ListItemButton
