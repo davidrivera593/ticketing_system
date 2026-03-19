@@ -14,8 +14,8 @@ import {
 } from "@mui/material";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import ASULogo from "../../assets/ASULogo.png";
 import CreateTicket from "../CreateTicket/CreateTicket";
 import BugReportIcon from "@mui/icons-material/BugReport";
@@ -25,6 +25,32 @@ const SideBar = () => {
   const [selectedPage, setSelectedPage] = React.useState(0);
   const [showModal, setShowModal] = useState(false);
   let navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname.toLowerCase();
+
+    // Keep the sidebar selection in sync with the current route
+    if (path.startsWith("/alltickets")) {
+      setSelectedPage(1); //All Tickets
+    } else if (path.startsWith("/escalatedtickets")) {
+      setSelectedPage(5); // Escalated Tickets
+    } else if (path.startsWith("/allassignees") ||
+               path.startsWith("/instructorprofile") 
+    ) {
+      setSelectedPage(2); // All Assignees
+    } else if (
+      path.startsWith("/mytickets") ||
+      path.startsWith("/gradertickets") ||
+      path.startsWith("/instructortickets")
+    ) {
+      setSelectedPage(1); //All Tickets
+    } else if (path.startsWith("/admindash") || path === "/") {
+      setSelectedPage(0); // Dashboard
+    } else{
+      setSelectedPage(-1); // No selection for unrecognized routes
+    }
+  }, [location.pathname]);
 
   const token = Cookies.get("token");
   const decodedToken = jwtDecode(token);
