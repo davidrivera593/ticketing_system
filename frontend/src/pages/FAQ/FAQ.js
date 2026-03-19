@@ -90,7 +90,7 @@ const FAQ_ITEMS = [
   {
     id: "ticket-escalation",
     question: "What is a ticket escalation and how do I do it?",
-    answer: "Escalated tickets require urgent attention. As a grader, ticket escalation goes to your TA. As a TA, ticket escalation goes to the admin. Appropiate users are notified via email upon ticket escalations. Once escalated, tickets can only be resolved by the recipient.",
+    answer: "Escalated tickets require urgent attention. As a grader, ticket escalation goes to your TA. As a TA, ticket escalation goes to the admin. Appropriate users are notified via email upon ticket escalations. Once escalated, tickets can only be resolved by the recipient.",
     roles: ["TA", "grader", "admin"]
   },  
   {
