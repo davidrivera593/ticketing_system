@@ -71,7 +71,7 @@ const FAQ_ITEMS = [
   {
     id: "replying-to-tickets",
     question: "What is the reply feature to tickets that I have submitted?",
-    answer: "The reply feature is a way to have a conversation history on a ticket that you have submmitted. It is not possible to make edits to a ticket after it has been submitted. This can only be done by the grader/TA that has been assigned to your ticket.",
+    answer: "The reply feature is a way to have a conversation history on a ticket that you have submitted. It is not possible to make edits to a ticket after it has been submitted. This can only be done by the grader/TA that has been assigned to your ticket.",
     roles: ["student"]
   },
   {
@@ -90,7 +90,7 @@ const FAQ_ITEMS = [
   {
     id: "ticket-escalation",
     question: "What is a ticket escalation and how do I do it?",
-    answer: "Escalated tickets require urgent attention. As a grader, ticket escalation goes to your TA. As a TA, ticket escalation goes to the admin. Appropiate users are notified via email upon ticket escalations. Once escalated, tickets can only be resolved by the recipient.",
+    answer: "Escalated tickets require urgent attention. As a grader, ticket escalation goes to your TA. As a TA, ticket escalation goes to the admin. Appropriate users are notified via email upon ticket escalations. Once escalated, tickets can only be resolved by the recipient.",
     roles: ["TA", "grader", "admin"]
   },  
   {
