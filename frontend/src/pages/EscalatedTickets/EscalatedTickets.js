@@ -46,8 +46,47 @@ export default function EscalatedTickets() {
         totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false
     });
 
-    const [studentTickets, setStudentTickets] = useState([]);
-    const [taTickets, setTaTickets] = useState([]);
+  const [studentTickets, setStudentTickets] = useState([]);
+  const [taTickets, setTaTickets] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const savedFilters = sessionStorage.getItem('escalatedTickets_filters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      setActiveFilters(filters.activeFilters || {
+        sort: null,
+        status: null,
+        source: null,
+        search: "",
+        teamNameSearch: "",
+      });
+      setHideResolved(filters.hideResolved ?? true);
+      setServerFilters(filters.serverFilters || {
+        sort: null,
+        status: null,
+      });
+      setStudentCurrentPage(filters.studentCurrentPage || 1);
+      setStudentItemsPerPage(filters.studentItemsPerPage || 10);
+      setTaCurrentPage(filters.taCurrentPage || 1);
+      setTaItemsPerPage(filters.taItemsPerPage || 10);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const filters = {
+      activeFilters,
+      hideResolved,
+      serverFilters,
+      studentCurrentPage,
+      studentItemsPerPage,
+      taCurrentPage,
+      taItemsPerPage,
+    };
+    sessionStorage.setItem('escalatedTickets_filters', JSON.stringify(filters));
+  }, [activeFilters, hideResolved, serverFilters, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, isInitialized]);
 
     // helper: get student name for avatar/title
     const fetchUserNameForTicket = async (ticket) => {
@@ -80,10 +119,11 @@ export default function EscalatedTickets() {
         }
     };
 
-    // Fetch escalated tickets with server-side pagination
-    useEffect(() => {
-        fetchTickets();
-    }, [studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, serverFilters, hideResolved]);
+  // Fetch escalated tickets with server-side pagination  
+  useEffect(() => {
+    if (!isInitialized) return;
+    fetchTickets();
+  }, [studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, serverFilters, hideResolved, isInitialized]);
 
     useEffect(() => {
         setStudentCurrentPage(1);

@@ -15,6 +15,26 @@ const AllAssignees = () => {
   const [search, setSearch] = useState("");
   const [taCounts, setTACounts] = useState({});
   const [userRole, setUserRole] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const savedFilters = sessionStorage.getItem('allAssignees_filters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      // restore search filter
+      setSearch(filters.search || "");
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const filters = {
+      search,
+    };
+    //save search filter to sessionStorage if it changes
+    sessionStorage.setItem('allAssignees_filters', JSON.stringify(filters));
+  }, [search, isInitialized]);
 
   useEffect(() => {
     // Get user role from token
