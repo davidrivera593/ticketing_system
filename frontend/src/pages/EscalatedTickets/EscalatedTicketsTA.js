@@ -14,6 +14,7 @@ export default function EscalatedTicketsTA() {
     const [tickets, setTickets] = useState([]);
     const [count, setCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     // Filtering states
     const [activeFilters, setActiveFilters] = useState({
@@ -137,8 +138,33 @@ export default function EscalatedTicketsTA() {
     };
 
     useEffect(() => {
+        const savedFilters = sessionStorage.getItem('escalatedTicketsTA_filters');
+        if (savedFilters) {
+            const filters = JSON.parse(savedFilters);
+            setActiveFilters(filters.activeFilters || {
+                sort: null,
+                status: null,
+                search: "",
+                teamNameSearch: "",
+            });
+            setHideResolved(filters.hideResolved ?? true);
+        }
+        setIsInitialized(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialized) return;
+        const filters = {
+            activeFilters,
+            hideResolved,
+        };
+        sessionStorage.setItem('escalatedTicketsTA_filters', JSON.stringify(filters));
+    }, [activeFilters, hideResolved, isInitialized]);
+
+    useEffect(() => {
+        if (!isInitialized) return;
         fetchTickets();
-    }, [studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, serverFilters, hideResolved]);
+    }, [studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, serverFilters, hideResolved, isInitialized]);
 
     if (loading) return <Box sx={{ p: 4, display: "grid", placeItems: "center" }}><CircularProgress /></Box>;
 
@@ -156,7 +182,7 @@ export default function EscalatedTicketsTA() {
                     </Box>
                 </Box>
                 <Box sx={{ display: "flex", gap: 1 }}>
-                    <TextField label="Search Student" size="small" onChange={(e) => setActiveFilters({...activeFilters, search: e.target.value})} />
+                    <TextField label="Search Student" size="small" value={activeFilters.search} onChange={(e) => setActiveFilters({...activeFilters, search: e.target.value})} />
                     <Button variant="outlined" onClick={() => setHideResolved(!hideResolved)}>
                         {hideResolved ? "Show Resolved" : "Hide Resolved"}
                     </Button>
