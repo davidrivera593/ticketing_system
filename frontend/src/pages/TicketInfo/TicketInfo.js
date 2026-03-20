@@ -139,7 +139,7 @@ const TicketInfo = () => {
 
       const updated = await response.json();
       setTicketStatus(updated.status);
-      setTicketData(updated);
+      setTicketData((prev) => ({ ...prev, ...updated }));
       window.dispatchEvent(new Event("ticketUpdated"));
     } catch (error) {
       console.error("Error updating ticket status:", error);
