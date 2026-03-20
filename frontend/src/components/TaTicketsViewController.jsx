@@ -241,22 +241,86 @@ export default function TicketsViewController({
 
     return (
         <Box sx={{ p: 0 }}>
-            <Box sx={{ display:"flex", alignItems:"center", justifyContent:"space-between", mb:1.5 }}>
-                <Box>{header}</Box>
-                <ViewToggle value={view} onChange={setView} />
+            <Box sx={{ display:"flex", alignItems:"center", mb:1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box>{header}</Box>
+                    {enableShare && (
+                        <>
+                            <Button
+                                variant={showCheckboxes ? "outlined" : "contained"}
+                                onClick={() => {
+                                    const next = !showCheckboxes;
+                                    setShowCheckboxes(next);
+                                    if (!next) {
+                                        setSelectedCheckboxes([]);
+                                    }
+                                }}
+                            >
+                                {showCheckboxes ? "Cancel" : "Share Tickets"}
+                            </Button>
+                            {showCheckboxes && (
+                                <Button
+                                    variant="contained"
+                                    disabled={selectedCheckboxes.length === 0}
+                                    onClick={() => {
+                                        if (selectedCheckboxes.length === 0) {
+                                            alert("Please select at least one ticket to share.");
+                                            return;
+                                        }
+                                        setShareOpen(true);
+                                    }}
+                                >
+                                    Share
+                                </Button>
+                            )}
+                            <GroupShareTicket
+                                handleOpen={shareOpen}
+                                handleClose={() => setShareOpen(false)}
+                                ticketIDs={selectedCheckboxes}
+                                idNameMap={idNameMap}
+                                allTAs={allAssignedID}
+                                assignmentPath="taticketassignments"
+                            />
+                        </>
+                    )}
+                </Box>
+                <Box sx={{ ml: 'auto' }}>
+                    <ViewToggle value={view} onChange={setView} />
+                </Box>
             </Box>
 
             {view === "list" ? (
                 <Box role="list" sx={{ border:"1px solid", borderColor:"divider", borderRadius:1, overflow:"hidden", bgcolor:"background.paper" }}>
                     <Box sx={{
                         display:{ xs:"none", md:"grid" },
-                        gridTemplateColumns:"40px 1fr 1fr 1fr 2fr 100px 100px 100px",
+                        gridTemplateColumns: showCheckboxes ? "100px 1fr 1fr 1fr 2fr 100px 100px 100px" : "40px 1fr 1fr 1fr 2fr 100px 100px 100px",
                         gap:2, px:2, py:1.5,
                         bgcolor:"background.default", borderBottom:"1px solid", borderColor:"divider",
                         typography:"overline", letterSpacing:0.6, color:"text.secondary", position:"sticky", top:0, zIndex:1,
                         fontWeight: "bold"
                     }}>
-                        <span></span>
+                        <span>
+                            {showCheckboxes && (
+                                <Checkbox
+                                    size="small"
+                                    indeterminate={
+                                        selectedCheckboxes.length > 0 &&
+                                        selectedCheckboxes.length < tickets.length
+                                    }
+                                    checked={
+                                        tickets.length > 0 &&
+                                        selectedCheckboxes.length === tickets.length
+                                    }
+                                    onChange={(e) =>
+                                        setSelectedCheckboxes(
+                                            e.target.checked
+                                                ? tickets.map((t) => t.ticket_id ?? t.id)
+                                                : []
+                                        )
+                                    }
+                                />
+                            )}
+                        </span>
                         <span style={{ textAlign: "center" }}>OWNER NAME</span>
                         <span style={{ textAlign: "center" }}>TEAM</span>
                         <span style={{ textAlign: "center" }}>SPONSOR</span>
@@ -268,7 +332,22 @@ export default function TicketsViewController({
 
                     {tickets.length === 0
                         ? <Box sx={{ p:4, textAlign:"center", color:"text.secondary" }}>No tickets yet</Box>
-                        : tickets.map((t) => <TicketRow key={t.ticket_id ?? t.id} ticket={t} onOpen={onOpenTicket} />)}
+                        : tickets.map((t) => (
+                            <TicketRow
+                                key={t.ticket_id ?? t.id}
+                                ticket={t}
+                                onOpen={onOpenTicket}
+                                showCheckboxes={showCheckboxes}
+                                selectedCheckboxes={selectedCheckboxes.includes(t.ticket_id ?? t.id)}
+                                onToggleSelect={(id) =>
+                                    setSelectedCheckboxes((prev) =>
+                                        prev.includes(id)
+                                            ? prev.filter((x) => x !== id)
+                                            : [...prev, id]
+                                    )
+                                }
+                            />
+                        ))}
                 </Box>
             ) : (
                 <Grid container spacing={2}>

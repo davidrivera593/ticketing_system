@@ -9,7 +9,7 @@ import './GroupShareTicket.css'
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 
-const GroupShareTicket = ({handleOpen, handleClose, ticketIDs, idNameMap: propIdNameMap = {}, allTAs}) => { 
+const GroupShareTicket = ({handleOpen, handleClose, ticketIDs, idNameMap: propIdNameMap = {}, allTAs, assignmentPath = "ticketassignments"}) => { 
     const [selectedTA, setSelectedTA] = useState(''); //current TA
     const [error, setError] = useState(false);
     const [assignedTAs, setAssignedTAs] = useState([]);
@@ -48,7 +48,7 @@ const GroupShareTicket = ({handleOpen, handleClose, ticketIDs, idNameMap: propId
         const fetchAssignments = async () => {
         try {
             const res = await fetch(
-            `${baseURL}/api/ticketassignments/ticket/${ticketIDs[0]}`,    // call the GET route
+            `${baseURL}/api/${assignmentPath}/ticket/${ticketIDs[0]}`,    // call the GET route
             {
                 method: "GET",
                 headers: {
@@ -119,7 +119,7 @@ const GroupShareTicket = ({handleOpen, handleClose, ticketIDs, idNameMap: propId
             try{
                 // selectedTA = assignedTAs.length ? assignedTAs[0].user_id : null;
                 const shareResponse = await fetch(
-                    `${baseURL}/api/ticketassignments/ticket/${ticketID}`,
+                    `${baseURL}/api/${assignmentPath}/ticket/${ticketID}`,
                     {
                         method: "POST",
                         headers: {
