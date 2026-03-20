@@ -2,6 +2,12 @@ import Cookies from "js-cookie";
 import Papa from "papaparse";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL; 
+
+const normalizeTeamName = (value) =>
+  String(value ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 const REQUIRED_HEADERS = [
   "project", 
   "sponsor", 
@@ -84,7 +90,7 @@ const createTeams = async (row) => {
         userData[k] = (row[k] ?? "").toString().trim();
     });
 
-    const team_name = userData.project;
+  const team_name = normalizeTeamName(userData.project);
     const sponsor_name = userData.sponsor;
     const sponsor_email = userData.sponsor_email;
     const grader_name = userData.grader;
