@@ -3,6 +3,23 @@ import Papa from "papaparse";
 import { generateRandomPassword }  from "../generateRandomPass";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL; 
+
+const normalizeTeamName = (value) =>
+  String(value ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const readJsonOrThrow = async (response) => {
+  const text = await response.text();
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const snippet = text.slice(0, 160).replace(/\s+/g, " ");
+    throw new Error(`Expected JSON but could not parse response: ${snippet}`);
+  }
+};
 const REQUIRED_HEADERS = [
   "name", 
   "canvas_user_id", 
@@ -16,8 +33,15 @@ const REQUIRED_HEADERS = [
 
 const getTeam = async (name) => {
   try {
+    const apiBase = (baseURL || "").toString().trim().replace(/\/+$/, "");
+    if (!apiBase) {
+      throw new Error(
+        "REACT_APP_API_BASE_URL is not set. In dev it should usually be http://localhost:3301"
+      );
+    }
     const token = Cookies.get("token");
-    const responseTeam = await fetch(`${baseURL}/api/teams/name/${name}`, {
+    const normalizedName = normalizeTeamName(name);
+    const responseTeam = await fetch(`${apiBase}/api/teams/by-name?name=${encodeURIComponent(normalizedName)}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -25,12 +49,12 @@ const getTeam = async (name) => {
       },
     });
 
-    const responseTeamData = await responseTeam.json();
+    const responseTeamData = await readJsonOrThrow(responseTeam);
 
     if (responseTeam.ok) {
         return { success: true, data: responseTeamData.team_id };
     } else {
-        return { success: false, error: `Failed to fetch Team ID for name ${name}: ${responseTeamData?.message || responseTeam.statusText}` };
+        return { success: false, error: `Failed to fetch Team ID for name ${normalizedName}: ${responseTeamData?.message || responseTeamData?.error || responseTeam.statusText}` };
     }
   } catch (error) {
       console.error("An error occurred while fetching Team ID:", error);
@@ -159,14 +183,14 @@ const addStudent = async (name, email, password, section, team_id) => {
 const createStudent = async (row) => {
   const userData = {};
   REQUIRED_HEADERS.forEach((k) => {
-    userData[k] = (row[k] ?? "").toString().trim();
+    userData[k] = (row[k] ?? "").toString().replace(/\u00A0/g, " ").trim();
   });
 
   const name = (userData.name ?? "").replace(/,/g, "").trim();
   const email = `${userData.login_id}@asu.edu`;
   const password = generateRandomPassword();
 
-  const section = userData.sections;
+  const section = (userData.sections ?? "").toString().trim();
   const team_id = await getTeam(userData.group_name);
 
   if (team_id.success === false) { 

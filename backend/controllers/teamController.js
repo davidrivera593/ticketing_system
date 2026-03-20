@@ -1,5 +1,25 @@
 const Team = require("../models/Team");
 
+const normalizeTeamName = (value) =>
+  String(value ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const buildCaseInsensitiveTeamNameWhere = (rawTeamName) => {
+  const normalized = normalizeTeamName(rawTeamName);
+  const normalizedLower = normalized.toLowerCase();
+  const sequelize = Team.sequelize;
+
+  return {
+    normalized,
+    where: sequelize.where(
+      sequelize.fn("lower", sequelize.col("team_name")),
+      normalizedLower
+    ),
+  };
+};
+
 exports.getAllTeams = async (req, res) => {
   try {
     const teams = await Team.findAll();
@@ -24,7 +44,32 @@ exports.getTeamById = async (req, res) => {
 
 exports.getTeamByName = async (req, res) => {
   try {
-    const team = await Team.findOne({ where: { team_name: req.params.team_name } });
+    const { normalized, where } = buildCaseInsensitiveTeamNameWhere(req.params.team_name);
+
+    if (!normalized) {
+      return res.status(400).json({ error: "Missing team_name" });
+    }
+
+    const team = await Team.findOne({ where });
+    if (team) {
+      res.json(team);
+    } else {
+      res.status(404).json({ error: "Team not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getTeamByNameQuery = async (req, res) => {
+  try {
+    const { normalized, where } = buildCaseInsensitiveTeamNameWhere(req.query.name);
+
+    if (!normalized) {
+      return res.status(400).json({ error: "Missing query param: name" });
+    }
+
+    const team = await Team.findOne({ where });
     if (team) {
       res.json(team);
     } else {
@@ -38,10 +83,22 @@ exports.getTeamByName = async (req, res) => {
 exports.createTeam = async (req, res) => {
   try {
     const {team_name, instructor_user_id, sponsor_name, sponsor_email, grader_name, grader_email} = req.body;
+
+    const normalizedTeamName = normalizeTeamName(team_name);
+    if (!normalizedTeamName) {
+      return res.status(400).json({ error: "team_name is required" });
+    }
     
     const [team, created] = await Team.findOrCreate({
-      where: { team_name },
-      defaults: { team_name, instructor_user_id, sponsor_name, sponsor_email, grader_name, grader_email },
+      where: { team_name: normalizedTeamName },
+      defaults: {
+        team_name: normalizedTeamName,
+        instructor_user_id,
+        sponsor_name,
+        sponsor_email,
+        grader_name,
+        grader_email,
+      },
     });
     if (created) return res.status(201).json({ created: true, team });
         return res.status(200).json({ created: false, team });
