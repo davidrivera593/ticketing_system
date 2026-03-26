@@ -153,7 +153,7 @@ const TaTicketInfo = () => {
             if (!response.ok) throw new Error("Failed to update status");
 
             const updatedTicket = await response.json();
-            setTicketData(updatedTicket); // Single source of truth update
+            setTicketData((prev) => ({ ...prev, ...updatedTicket })); // Single source of truth update
             window.dispatchEvent(new Event("ticketUpdated"));
         } catch (error) {
             console.error("Error updating ticket status:", error);
