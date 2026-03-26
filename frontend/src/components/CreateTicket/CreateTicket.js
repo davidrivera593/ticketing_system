@@ -16,15 +16,19 @@ const CreateTicket = ({ onClose }) => {
     const userId = Cookies.get("user_id");
     const userName = Cookies.get("name") || "";
 
-    // State for Role Detection
-    const [isStudent, setIsStudent] = useState(null); // null until check is complete
+    // State for Role and Loading
+    const [isStudent, setIsStudent] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // Form & Data State
+    // Form State
     const [issueType, setIssueType] = useState("");
     const [description, setDescription] = useState("");
-    const [instructorId, setInstructorId] = useState("");
+    const [instructorId, setInstructorId] = useState(""); // For Student view (Assigned TA/Grader)
+
+    // Team & Student Selection (For Staff/TA View)
     const [selectedTeamId, setSelectedTeamId] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [selectedStudentId, setSelectedStudentId] = useState("");
+    const [studentsOnTeam, setStudentsOnTeam] = useState([]);
 
     // Data Lists
     const [studentData, setStudentData] = useState({ section: "", sponsor: "" });
@@ -38,30 +42,26 @@ const CreateTicket = ({ onClose }) => {
 
     const determineRoleAndLoadData = async () => {
         try {
-            // 1. Fetch all students to see if current user is among them
+            // 1. Check if user is a student
             const studentRes = await fetch(`${baseURL}/api/users/role/student`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const students = await studentRes.json();
-
             const me = students.find(s => String(s.user_id) === String(userId));
 
             if (me) {
-                // USER IS A STUDENT
                 setIsStudent(true);
                 setStudentData({ section: me.section || "", sponsor: me.sponsor || "" });
-
-                // Load student-specific requirements
                 fetchTeams();
                 fetchUsersByRole("TA", setTaList);
                 fetchUsersByRole("grader", setGraderList);
             } else {
-                // USER IS STAFF (TA/Instructor)
                 setIsStudent(false);
+                fetchTeams(); // TAs need the full team list to start the filter
             }
         } catch (error) {
             console.error("Role detection failed:", error);
-            setIsStudent(false); // Fallback to staff view or error state
+            setIsStudent(false);
         }
     };
 
@@ -81,12 +81,32 @@ const CreateTicket = ({ onClose }) => {
         setter(Array.isArray(data) ? data : []);
     };
 
+    // New: Fetch students when a TA selects a team
+    const handleTeamChange = async (teamId) => {
+        setSelectedTeamId(teamId);
+        setSelectedStudentId(""); // Reset student selection
+        setStudentsOnTeam([]);
+
+        if (!teamId) return;
+
+        try {
+            const res = await fetch(`${baseURL}/api/studentdata/team/${teamId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setStudentsOnTeam(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error fetching students for team:", error);
+        }
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         setLoading(true);
 
         try {
             const endpoint = isStudent ? `${baseURL}/api/tickets` : `${baseURL}/api/tatickets`;
+
             const payload = isStudent ? {
                 team_id: selectedTeamId,
                 student_id: userId,
@@ -96,6 +116,7 @@ const CreateTicket = ({ onClose }) => {
                 issue_description: description,
             } : {
                 ta_id: userId,
+                student_id: selectedStudentId, // The "On Behalf Of" student
                 issue_type: issueType,
                 issue_description: description,
             };
@@ -106,10 +127,14 @@ const CreateTicket = ({ onClose }) => {
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) throw new Error("Failed to create ticket.");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to create ticket.");
+            }
+
             const ticket = await response.json();
 
-            // Step 2: Student Assignment logic
+            // Handle Student Assignment logic (if Student created it)
             if (isStudent && instructorId) {
                 await fetch(`${baseURL}/api/ticketassignments/ticket/${ticket.ticket_id}`, {
                     method: "POST",
@@ -128,7 +153,6 @@ const CreateTicket = ({ onClose }) => {
         }
     };
 
-    // Prevent rendering the form until we know the role
     if (isStudent === null) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -157,7 +181,7 @@ const CreateTicket = ({ onClose }) => {
 
                     <Grid container spacing={2}>
                         <Grid size={isStudent ? 4 : 12}>
-                            <TextField label="Name" variant="filled" size="small" value={userName} fullWidth InputProps={{ readOnly: true }} />
+                            <TextField label={isStudent ? "Name" : "Created By (TA)"} variant="filled" size="small" value={userName} fullWidth InputProps={{ readOnly: true }} />
                         </Grid>
                         {isStudent && (
                             <>
@@ -167,11 +191,30 @@ const CreateTicket = ({ onClose }) => {
                         )}
                     </Grid>
 
-                    {isStudent && (
+                    {/* Team Selection */}
+                    <FormControl fullWidth required>
+                        <InputLabel>Team Name</InputLabel>
+                        <Select
+                            value={selectedTeamId}
+                            label="Team Name"
+                            onChange={(e) => isStudent ? setSelectedTeamId(e.target.value) : handleTeamChange(e.target.value)}
+                        >
+                            {teamList.map((t) => <MenuItem key={t.team_id} value={t.team_id}>{t.team_name}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+
+                    {/* On Behalf Of - Staff Only */}
+                    {!isStudent && selectedTeamId && (
                         <FormControl fullWidth required>
-                            <InputLabel>Team Name</InputLabel>
-                            <Select value={selectedTeamId} label="Team Name" onChange={(e) => setSelectedTeamId(e.target.value)}>
-                                {teamList.map((t) => <MenuItem key={t.team_id} value={t.team_id}>{t.team_name}</MenuItem>)}
+                            <InputLabel>On Behalf Of (Student)</InputLabel>
+                            <Select
+                                value={selectedStudentId}
+                                label="On Behalf Of (Student)"
+                                onChange={(e) => setSelectedStudentId(e.target.value)}
+                            >
+                                {studentsOnTeam.map((s) => (
+                                    <MenuItem key={s.user_id} value={s.user_id}>{s.name}</MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
                     )}
@@ -193,6 +236,7 @@ const CreateTicket = ({ onClose }) => {
                         </Select>
                     </FormControl>
 
+                    {/* Student-only Staff Assignment */}
                     {isStudent && (
                         <FormControl fullWidth required>
                             <InputLabel>{issueType === "gradeAppeal" ? "Assigned Grader" : "Assigned TA"}</InputLabel>
