@@ -139,7 +139,7 @@ const TicketInfo = () => {
 
       const updated = await response.json();
       setTicketStatus(updated.status);
-      setTicketData(updated);
+      setTicketData((prev) => ({ ...prev, ...updated }));
       window.dispatchEvent(new Event("ticketUpdated"));
     } catch (error) {
       console.error("Error updating ticket status:", error);
@@ -359,7 +359,7 @@ const TicketInfo = () => {
             {/* Single Row Info Grid */}
             <Box sx={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(6, 1fr)', 
+              gridTemplateColumns: 'repeat(7, 1fr)', 
               gap: 3,
               mb: 2
             }}>
@@ -378,6 +378,15 @@ const TicketInfo = () => {
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
                   {ticketData.team_name}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>
+                  SECTION
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
+                  {ticketData.section}
                 </Typography>
               </Box>
               

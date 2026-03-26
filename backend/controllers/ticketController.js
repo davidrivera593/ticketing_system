@@ -1,6 +1,7 @@
 const Ticket = require("../models/Ticket");
 const User = require("../models/User");
 const Team = require("../models/Team");
+const StudentData = require("../models/StudentData");
 const Communication = require("../models/Communication"); 
 const sendEmail = require('../services/emailService');
 const TicketAssignment = require("../models/TicketAssignment");
@@ -451,8 +452,10 @@ exports.getAllTicketDataById = async (req, res) => {
     if (ticket) {
       const student = await User.findByPk(ticket.dataValues.student_id);
       const team = await Team.findByPk(ticket.dataValues.team_id);
+      const studentData = await StudentData.findByPk(ticket.dataValues.student_id);
       ticket.dataValues.student_name = student.dataValues.name;
       ticket.dataValues.team_name = team.team_name;
+      ticket.dataValues.section = studentData.dataValues.section;
 
       res.json(ticket);
     } else {
