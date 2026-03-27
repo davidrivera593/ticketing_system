@@ -153,7 +153,7 @@ const TaTicketInfo = () => {
             if (!response.ok) throw new Error("Failed to update status");
 
             const updatedTicket = await response.json();
-            setTicketData(updatedTicket); // Single source of truth update
+            setTicketData((prev) => ({ ...prev, ...updatedTicket })); // Single source of truth update
             window.dispatchEvent(new Event("ticketUpdated"));
         } catch (error) {
             console.error("Error updating ticket status:", error);
@@ -248,6 +248,14 @@ const TaTicketInfo = () => {
                             <Box>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>CREATOR</Typography>
                                 <Typography variant="body1" sx={{ fontWeight: '500' }}>{ticketData.ta_name || 'N/A'}</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>
+                                    STUDENT (ON BEHALF OF)
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: '600', color: theme.palette.primary.main }}>
+                                    {ticketData.student_name || 'N/A'}
+                                </Typography>
                             </Box>
                             <Box>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>ISSUE TYPE</Typography>

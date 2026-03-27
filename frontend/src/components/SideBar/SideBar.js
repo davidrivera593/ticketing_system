@@ -28,6 +28,8 @@ const SideBar = () => {
   let navigate = useNavigate();
   const location = useLocation();
 
+
+  //Update here when creating new sidebar sections for it to highlight
   useEffect(() => {
     const path = location.pathname.toLowerCase();
 
@@ -48,6 +50,8 @@ const SideBar = () => {
       setSelectedPage(1); //All Tickets
     } else if (path.startsWith("/admindash") || path === "/") {
       setSelectedPage(0); // Dashboard
+    } else if (path.startsWith("/help/faq")) {
+      setSelectedPage(8); // Help
     } else{
       setSelectedPage(-1); // No selection for unrecognized routes
     }

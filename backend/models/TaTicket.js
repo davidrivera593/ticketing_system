@@ -47,6 +47,16 @@ const TaTicket = sequelize.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
+        on_behalf_of: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'users',
+                key: 'user_id'
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'SET NULL',
+        }
         // asu_id: {
         //   type: DataTypes.STRING(10),
         //   allowNull: false,
@@ -67,6 +77,7 @@ const TaTicket = sequelize.define(
 
 // Define Association
 TaTicket.belongsTo(User, { foreignKey: "ta_id", as: "TA" });
+TaTicket.belongsTo(User, { as: 'student', foreignKey: 'on_behalf_of', targetKey: 'user_id'});
 
 module.exports = TaTicket;
 
