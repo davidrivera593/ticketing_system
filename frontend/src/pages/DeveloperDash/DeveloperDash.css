@@ -49,6 +49,30 @@
   transition: background-color 0.18s ease;
 }
 
+.developer-report-row-enter {
+  opacity: 0;
+  transform: translateX(36px);
+  animation: developerReportSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.developer-report-modal-enter {
+  opacity: 0;
+  transform: translateX(36px);
+  animation: developerReportSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes developerReportSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(36px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .developer-report-row:hover {
   background: #f5f5f5;
 }
@@ -112,5 +136,23 @@
 
   .developer-report-card table {
     min-width: 680px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .developer-report-row {
+    transition: none;
+  }
+
+  .developer-report-row-enter {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .developer-report-modal-enter {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
