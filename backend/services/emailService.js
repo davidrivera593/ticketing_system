@@ -13,11 +13,15 @@ if (process.env.NODE_ENV !== "production") {
   const senderEmail = process.env.EMAIL_USER;
 
   const transporter = nodemailer.createTransport({
-    host: "localhost",
-    port: 25,
-    secure: false,       // port 25 does not use TLS
+    host: "mail.helpdesk.asucapstonetools.com",
+    port: 465,
+    secure: true,        // port 465 uses SSL
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
     tls: {
-      rejectUnauthorized: false,  // allow self-signed certs on localhost
+      rejectUnauthorized: false,  // server cert is issued to GoDaddy's default hostname, not our domain
     },
   });
 
