@@ -57,6 +57,7 @@ const defaultProps = {
 const StudentInstructorCard = ({
   name = defaultProps.name,
   userId = defaultProps.userId,
+  roleLabel = "Teaching Assistant",
 }) => {
   const theme = useTheme();
   const [user, setUser] = useState(null);
@@ -304,7 +305,7 @@ const getAvailabilityStatus = () => {
             }}
           >
             <PersonIcon sx={{ fontSize: "0.9rem" }} />
-            Teaching Assistant
+            {roleLabel}
           </Typography>
         </Box>
       </Box>
