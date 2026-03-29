@@ -9,6 +9,22 @@ const {
 } = require("../services/ticketNotificationService");
 const { Op } = require("sequelize");
 
+const getResponseTimeForTicket = async (ticketId, createdAt) => {
+  const firstCommunication = await Communication.findOne({
+    where: { ticket_id: ticketId },
+    order: [["created_at", "ASC"]],
+  });
+
+  if (!firstCommunication) {
+    return "No response yet";
+  }
+
+  const responseTimeMs =
+    new Date(firstCommunication.created_at).getTime() - new Date(createdAt).getTime();
+
+  return Math.floor(responseTimeMs / (1000 * 60));
+};
+
 exports.getAllTickets = async (req, res) => {
   try {
     // Extract pagination parameters from query string
@@ -415,7 +431,12 @@ exports.getTicketById = async (req, res) => {
     });
 
     if (ticket) {
-      res.json(ticket);
+      const responseTime = await getResponseTimeForTicket(ticket.ticket_id, ticket.createdAt);
+
+      res.json({
+        ...ticket.toJSON(),
+        responseTime,
+      });
     } else {
       res.status(404).json({ error: "Ticket not found" });
     }
