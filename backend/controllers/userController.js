@@ -5,6 +5,10 @@ const Team = require("../models/Team");
 const { validatePassword } = require("../utils/passwordValidator");
 // github tracking
 
+const VALID_USER_ROLES = ["student", "TA", "admin", "grader", "developer"];
+const BCRYPT_HASH_RE = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll();
@@ -43,9 +47,67 @@ exports.getUserByEmail = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const user = await User.create(req.body);
-    res.status(201).json(user);
+    const {
+      name,
+      email,
+      role,
+      password,
+      notifications_enabled,
+      dark_mode,
+      is_enabled,
+      must_change_password,
+    } = req.body;
+
+    if (!name || !email || !role || !password) {
+      return res.status(400).json({ error: "Name, email, role, and password are required" });
+    }
+
+    if (!VALID_USER_ROLES.includes(role)) {
+      return res.status(400).json({ error: "Invalid role specified" });
+    }
+
+    let storedPassword = password;
+    if (!BCRYPT_HASH_RE.test(password)) {
+      const passwordCheck = validatePassword(password);
+      if (!passwordCheck.valid) {
+        return res.status(400).json({
+          error: "Password policy violation",
+          details: passwordCheck.errors,
+        });
+      }
+      storedPassword = await bcrypt.hash(password, 10);
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      role,
+      password: storedPassword,
+      notifications_enabled,
+      dark_mode,
+      is_enabled,
+      must_change_password: must_change_password ?? false,
+    });
+
+    res.status(201).json({
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      notifications_enabled: user.notifications_enabled,
+      dark_mode: user.dark_mode,
+      is_enabled: user.is_enabled,
+      must_change_password: user.must_change_password,
+    });
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const details = (error.errors || []).map(e => ({ path: e.path, message: e.message }));
+      return res.status(409).json({ error: 'Unique constraint', details });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      const details = (error.errors || []).map(e => ({ path: e.path, message: e.message }));
+      return res.status(400).json({ error: 'Validation error', details });
+    }
     res.status(500).json({ error: error.message });
   }
 };
@@ -96,9 +158,7 @@ exports.deleteUser = async (req, res) => {
 exports.getUsersByRole = async (req, res) => {
     try {
         const { role } = req.params;
-        const validRoles = ["student", "TA", "admin", "grader"];
-
-        if (!validRoles.includes(role)) {
+        if (!VALID_USER_ROLES.includes(role)) {
             return res.status(400).json({ error: "Invalid role specified" });
         }
 

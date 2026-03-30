@@ -18,7 +18,7 @@ try:
     cursor = conn.cursor()
 
     # Generate and insert fake data for Users table
-    roles = ['student', 'TA', 'admin']
+    roles = ['student', 'TA', 'admin', 'grader', 'developer']
     password = 'test'
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 

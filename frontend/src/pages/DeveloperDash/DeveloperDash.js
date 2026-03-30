@@ -123,169 +123,176 @@ const BugReportCard = ({
           transform: "translate(-50%, -50%)",
           width: 560,
           maxWidth: "92%",
-          maxHeight: "85vh",
-          overflow: "auto",
-          bgcolor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-          borderRadius: 2,
-          boxShadow: 24,
-          p: 4,
         }}
       >
-        <Button
-          onClick={onClose}
-          sx={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            minWidth: "32px",
-            minHeight: "32px",
-            borderRadius: "50%",
-            backgroundColor: theme.palette.primary.main,
-            color: "white",
-            "&:hover": {
-              backgroundColor: theme.palette.primary.dark,
-            },
-          }}
-        >
-          &times;
-        </Button>
-
         <Box
+          className="developer-report-modal-enter"
           sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 2,
-            mb: 3,
+            maxHeight: "85vh",
+            overflow: "auto",
+            bgcolor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            position: "relative",
           }}
         >
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <Avatar {...stringAvatar(report.subject || "Bug Report")} />
-            <Box>
-              <Typography
-                variant="overline"
-                sx={{ color: theme.palette.text.secondary, letterSpacing: 1.2 }}
-              >
-                Bug Report
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                {report.subject || "Untitled bug report"}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25 }}>
-          {saveError && <Alert severity="error">{saveError}</Alert>}
-          {saveSuccess && <Alert severity="success">{saveSuccess}</Alert>}
-          {isClosed && (
-            <Alert severity="info">
-              This bug report is closed. Status and severity are locked.
-            </Alert>
-          )}
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              Status:
-            </Typography>
-            <Chip label={statusStyle.label} size="small" sx={statusStyle} />
-          </Box>
-
-          <TextField
-            select
-            label="Update Status"
-            value={draftStatus}
-            onChange={(event) => onDraftChange("status", event.target.value)}
-            size="small"
-            fullWidth
-            disabled={isClosed}
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <MenuItem key={option} value={option}>
-                {formatEnumLabel(option)}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              Severity:
-            </Typography>
-            <Chip label={severityStyle.label} size="small" sx={severityStyle} />
-          </Box>
-
-          <TextField
-            select
-            label="Update Severity"
-            value={draftSeverity}
-            onChange={(event) => onDraftChange("severity", event.target.value)}
-            size="small"
-            fullWidth
-            disabled={isClosed}
-          >
-            {SEVERITY_OPTIONS.map((option) => (
-              <MenuItem key={option} value={option}>
-                {formatEnumLabel(option)}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.75 }}>
-              Description
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                lineHeight: 1.6,
-                p: 2,
-                borderRadius: 1.5,
-                backgroundColor: "#f6f6f6",
-                border: "1px solid #e0e0e0",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {report.description || "No description provided."}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                Reporter
-              </Typography>
-              <Typography variant="body2">
-                {getReporterDisplayName(report, reporterNames)}
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                Created
-              </Typography>
-              <Typography variant="body2">
-                {formatCreatedAt(report.createdAt || report.created_at)}
-              </Typography>
-            </Box>
-          </Box>
-
           <Button
-            variant="contained"
-            disableElevation
-            disabled={isClosed || !hasChanges || isSaving}
-            onClick={onSave}
+            onClick={onClose}
             sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              minWidth: "32px",
+              minHeight: "32px",
+              borderRadius: "50%",
               backgroundColor: theme.palette.primary.main,
               color: "white",
-              borderRadius: 999,
-              fontSize: "0.8rem",
-              width: "fit-content",
-              alignSelf: "flex-end",
+              "&:hover": {
+                backgroundColor: theme.palette.primary.dark,
+              },
             }}
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            &times;
           </Button>
+
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <Avatar {...stringAvatar(report.subject || "Bug Report")} />
+              <Box>
+                <Typography
+                  variant="overline"
+                  sx={{ color: theme.palette.text.secondary, letterSpacing: 1.2 }}
+                >
+                  Bug Report
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  {report.subject || "Untitled bug report"}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25 }}>
+            {saveError && <Alert severity="error">{saveError}</Alert>}
+            {saveSuccess && <Alert severity="success">{saveSuccess}</Alert>}
+            {isClosed && (
+              <Alert severity="info">
+                This bug report is closed. Status and severity are locked.
+              </Alert>
+            )}
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                Status:
+              </Typography>
+              <Chip label={statusStyle.label} size="small" sx={statusStyle} />
+            </Box>
+
+            <TextField
+              select
+              label="Update Status"
+              value={draftStatus}
+              onChange={(event) => onDraftChange("status", event.target.value)}
+              size="small"
+              fullWidth
+              disabled={isClosed}
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {formatEnumLabel(option)}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                Severity:
+              </Typography>
+              <Chip label={severityStyle.label} size="small" sx={severityStyle} />
+            </Box>
+
+            <TextField
+              select
+              label="Update Severity"
+              value={draftSeverity}
+              onChange={(event) => onDraftChange("severity", event.target.value)}
+              size="small"
+              fullWidth
+              disabled={isClosed}
+            >
+              {SEVERITY_OPTIONS.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {formatEnumLabel(option)}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.75 }}>
+                Description
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  lineHeight: 1.6,
+                  p: 2,
+                  borderRadius: 1.5,
+                  backgroundColor: "#f6f6f6",
+                  border: "1px solid #e0e0e0",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {report.description || "No description provided."}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Reporter
+                </Typography>
+                <Typography variant="body2">
+                  {getReporterDisplayName(report, reporterNames)}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Created
+                </Typography>
+                <Typography variant="body2">
+                  {formatCreatedAt(report.createdAt || report.created_at)}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Button
+              variant="contained"
+              disableElevation
+              disabled={isClosed || !hasChanges || isSaving}
+              onClick={onSave}
+              sx={{
+                backgroundColor: theme.palette.primary.main,
+                color: "white",
+                borderRadius: 999,
+                fontSize: "0.8rem",
+                width: "fit-content",
+                alignSelf: "flex-end",
+              }}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Modal>
@@ -522,10 +529,11 @@ const DeveloperDash = () => {
               )}
 
               {!loading &&
-                bugReports.map((report) => (
+                bugReports.map((report, index) => (
                   <tr
                     key={report.id}
-                    className="developer-report-row"
+                    className="developer-report-row developer-report-row-enter"
+                    style={{ animationDelay: `${index * 90}ms` }}
                     onClick={() => handleOpenReport(report)}
                   >
                     <td>{formatDisplayValue(report.subject)}</td>
