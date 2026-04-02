@@ -74,6 +74,7 @@ const ManageStudents = () => {
                 const email = student.email?.toLowerCase() || "";
                 const team = student.team_name?.toLowerCase() || "n/a";
                 const sponsor = student.sponsor?.toLowerCase() || "n/a";
+                const semester = student.semester?.toLowerCase() || "n/a";
                 const section = student.section?.toLowerCase() || "n/a";
 
                 return (
@@ -81,6 +82,7 @@ const ManageStudents = () => {
                     email.includes(lowerCaseQuery) ||
                     team.includes(lowerCaseQuery) ||
                     sponsor.includes(lowerCaseQuery) ||
+                    semester.includes(lowerCaseQuery) ||
                     section.includes(lowerCaseQuery)
                 );
             });
@@ -343,7 +345,7 @@ const ManageStudents = () => {
                     <TextField
                         fullWidth
                         variant="outlined"
-                        placeholder="Search by name, email, team, sponsor, or section..."
+                        placeholder="Search by name, email, team, sponsor, semester, or section..."
                         value={searchQuery}
                         onChange={handleSearchChange}
                         InputProps={{
@@ -444,6 +446,9 @@ const ManageStudents = () => {
                                         Sponsor
                                     </TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
+                                        Semester
+                                    </TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
                                         Section
                                     </TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
@@ -493,6 +498,12 @@ const ManageStudents = () => {
                                                 sx={{ color: theme.palette.text.primary }}
                                             >
                                                 {student.sponsor || "N/A"}
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ color: theme.palette.text.primary }}
+                                            >
+                                                {student.semester || "N/A"}
                                             </TableCell>
                                             <TableCell
                                                 align="center"
