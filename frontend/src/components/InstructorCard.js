@@ -62,6 +62,7 @@ const InstructorCard = ({
   name = defaultProps.name,
   counts = defaultProps.counts,
   userId = defaultProps.userId,
+  roleLabel = "UGTA",
 }) => {
   const theme = useTheme();
   const [user, setUser] = useState(null);
@@ -290,7 +291,7 @@ const InstructorCard = ({
               variant="body2"
               sx={{ fontSize: "0.8rem", color: theme.palette.text.secondary }}
             >
-              UGTA
+              {roleLabel}
             </Typography>
             <Badge
               badgeContent={getTotalActiveTickets()}

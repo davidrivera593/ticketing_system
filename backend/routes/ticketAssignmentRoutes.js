@@ -7,7 +7,7 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware.verifyToken,
-  authMiddleware.isTAOrAdmin,
+  authMiddleware.isStaff,
   ticketAssignmentController.getAllTicketAssignments
 );
 router.get(
@@ -18,13 +18,13 @@ router.get(
 router.get( //changed to allow students to see TA assignments
   "/ticket/:ticket_id",
   authMiddleware.verifyToken,
-  authMiddleware.isStudentOrTAOrAdmin,
+  authMiddleware.isStaffOrStudent,
   ticketAssignmentController.getTicketAssignmentsByTicketId
 );
 router.post( // 2/21/25 changed to allow everyone to post in order to stop getting ticket assignment error
   "/ticket/:ticket_id",
   authMiddleware.verifyToken,
-  authMiddleware.isStudentOrTAOrAdmin,
+  authMiddleware.isStaffOrStudent,
   ticketAssignmentController.assignTicket
 );
 router.delete(
@@ -51,7 +51,7 @@ router.put(
 router.get(
   "/users/:user_id",
   authMiddleware.verifyToken,
-  authMiddleware.isTAOrAdmin,
+  authMiddleware.isStaff,
   ticketAssignmentController.getTicketAssignmentsById
 );
 

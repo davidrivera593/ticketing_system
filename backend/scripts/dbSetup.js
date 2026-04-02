@@ -19,7 +19,7 @@ faker.seed(123); // so data stays the same even after resetting database
 
 // Generate data for Users table
 async function insertUsers() {
-  const roles = ["student", "TA", "admin"];
+  const roles = ["student", "TA", "admin", "grader", "developer"];
   const defaultPassword = "password";
   const hashedPassword = await hashPassword(defaultPassword);
 

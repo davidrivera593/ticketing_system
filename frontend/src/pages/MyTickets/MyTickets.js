@@ -36,6 +36,35 @@ export default function MyTickets() {
   });
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [hideResolved, setHideResolved] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const savedFilters = sessionStorage.getItem('myTickets_filters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      setActiveFilters(filters.activeFilters || {
+        sort: null,
+        status: null,
+        search: "",
+        teamNameSearch: "",
+      });
+      setHideResolved(filters.hideResolved ?? false);
+      setCurrentPage(filters.currentPage || 1);
+      setItemsPerPage(filters.itemsPerPage || 10);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const filters = {
+      activeFilters,
+      hideResolved,
+      currentPage,
+      itemsPerPage,
+    };
+    sessionStorage.setItem('myTickets_filters', JSON.stringify(filters));
+  }, [activeFilters, hideResolved, currentPage, itemsPerPage, isInitialized]);
 
   const fetchTeamNameFromId = async (team_id) => {
     if (!team_id) return "No Team";
@@ -109,8 +138,9 @@ export default function MyTickets() {
   };
 
   useEffect(() => {
+    if (!isInitialized) return;
     fetchTickets();
-  }, [hideResolved]); // ✅ Only server calls for major filters
+  }, [hideResolved, isInitialized]); // ✅ Only server calls for major filters
 
   useEffect(() => {
     applyFilters();

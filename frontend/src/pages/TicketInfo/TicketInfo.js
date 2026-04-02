@@ -139,7 +139,7 @@ const TicketInfo = () => {
 
       const updated = await response.json();
       setTicketStatus(updated.status);
-      setTicketData(updated);
+      setTicketData((prev) => ({ ...prev, ...updated }));
       window.dispatchEvent(new Event("ticketUpdated"));
     } catch (error) {
       console.error("Error updating ticket status:", error);
@@ -244,7 +244,7 @@ const TicketInfo = () => {
             map[user.user_id] = { name: user.name, role: 'TA' };
         });
         graderList.forEach(user => {
-            map[user.user_id] = { name: user.name, role: 'Grader' };
+            map[user.user_id] = { name: user.name, role: 'grader' };
         });
         return map;
     };
@@ -359,7 +359,7 @@ const TicketInfo = () => {
             {/* Single Row Info Grid */}
             <Box sx={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(6, 1fr)', 
+              gridTemplateColumns: 'repeat(7, 1fr)', 
               gap: 3,
               mb: 2
             }}>
@@ -378,6 +378,15 @@ const TicketInfo = () => {
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
                   {ticketData.team_name}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: theme.palette.text.secondary, mb: 0.5, fontSize: '0.75rem' }}>
+                  SECTION
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: '500', color: theme.palette.text.primary }}>
+                  {ticketData.section}
                 </Typography>
               </Box>
               
@@ -440,25 +449,38 @@ const TicketInfo = () => {
                   backgroundColor: theme.palette.background.paper,
                   padding: '0 4px'
                 }}>Status</InputLabel>
-                <Select value={ticketStatus} onChange={handleStatusChange} size="small" sx={{ 
-                  height: "40px"
-                }}>
-                  <MenuItem value="new">New</MenuItem>
-                  <MenuItem value="ongoing">Ongoing</MenuItem>
-                  <MenuItem value="resolved">Resolved</MenuItem>
-                </Select>
+                  <Select
+                      disabled={userType === 'student'} // Prevents students from changing status manually
+                      value={ticketStatus}
+                      onChange={handleStatusChange}
+                      size="small"
+                  >
+                      <MenuItem value="new">New</MenuItem>
+                      <MenuItem value="ongoing">Ongoing</MenuItem>
+                      <MenuItem value="resolved">Resolved</MenuItem>
+                  </Select>
               </FormControl>
+
+                {(userType === "admin" || userType === "TA") && (
+                    <>
+                        <Button variant="contained" onClick={() => setEditOpen(true)}>Edit Ticket</Button>
+                        <ConfirmEdit handleOpen={editOpen} handleClose={editPopupClose} onConfirmEdit={handleConfirmEdit} />
+                    </>
+                )}
+
+                {(userType === "admin" || userType === "TA" || userType === "grader") && (
+                    <Button variant="outlined" color="error" onClick={() => handleStatusChange({ target: { value: 'resolved' } })}>Close Ticket</Button>
+
+                )}
               
-              <Button variant="contained" onClick={() => setEditOpen(true)}>Edit Ticket</Button>
-              <ConfirmEdit handleOpen={editOpen} handleClose={editPopupClose} onConfirmEdit={handleConfirmEdit} />
-              
-              <Button variant="outlined" color="error" onClick={() => handleStatusChange({ target: { value: 'resolved' } })}>Close Ticket</Button>
-              
-              {userType === "TA" && ticketData.escalated === false && (
-                <Button variant="contained" color="warning" onClick={() => setEscalateOpen(true)}>Escalate Ticket</Button>
-              )}
-              <ConfirmEscalate handleOpen={escalateOpen} handleClose={() => setEscalateOpen(false)} ticketID={ticketId} />
-              
+
+                {(userType === "TA" || userType === "grader") && ticketData.escalated === false && (
+                    <>
+                        <Button variant="contained" color="warning" onClick={() => setEscalateOpen(true)}>Escalate Ticket</Button>
+                        <ConfirmEscalate handleOpen={escalateOpen} handleClose={() => setEscalateOpen(false)} ticketID={ticketId} />
+                    </>
+                )}
+
               {userType === "admin" && ticketData.escalated && (
                 <Button variant="contained" color="success" onClick={() => resolveEscalation()}>Resolve Escalation</Button>
               )}

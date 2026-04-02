@@ -315,6 +315,15 @@ export default function TicketsViewController({
                 teamName={t.teamName || t.team_name}
                 sponsorName={t.sponsor_name}
                 createdAt={t.created_at}
+                showCheckboxes={showCheckboxes}
+                isSelected={selectedCheckboxes.includes(t.ticket_id ?? t.id)}
+                onToggleSelect={() =>
+                  setSelectedCheckboxes(prev =>
+                    prev.includes(t.ticket_id ?? t.id)
+                      ? prev.filter(x => x !== (t.ticket_id ?? t.id))
+                      : [...prev, t.ticket_id ?? t.id]
+                  )
+                }
               />
             </Grid>
           ))}

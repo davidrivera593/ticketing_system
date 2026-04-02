@@ -29,6 +29,7 @@ const GraderTickets = () => {
         source: null,
         search: "",
         teamNameSearch: "",
+        sectionSearch: "",
     });
     const [hideResolved, setHideResolved] = useState(true);
 
@@ -49,6 +50,7 @@ const GraderTickets = () => {
         hasNextPage: false,
         hasPreviousPage: false
     });
+    const [isInitialized, setIsInitialized] = useState(false);
 
     let navigate = useNavigate();
 
@@ -61,8 +63,43 @@ const GraderTickets = () => {
     };
 
     useEffect(() => {
-        loadTickets();
+        const savedFilters = sessionStorage.getItem('graderTickets_filters');
+        if (savedFilters) {
+            const filters = JSON.parse(savedFilters);
+            setActiveFilters(filters.activeFilters || {
+                sort: null,
+                status: null,
+                source: null,
+                search: "",
+                teamNameSearch: "",
+                sectionSearch: "",
+            });
+            setHideResolved(filters.hideResolved ?? true);
+            setStudentCurrentPage(filters.studentCurrentPage || 1);
+            setStudentItemsPerPage(filters.studentItemsPerPage || 10);
+            setTaCurrentPage(filters.taCurrentPage || 1);
+            setTaItemsPerPage(filters.taItemsPerPage || 10);
+        }
+        setIsInitialized(true);
     }, []);
+
+    useEffect(() => {
+        if (!isInitialized) return;
+        const filters = {
+            activeFilters,
+            hideResolved,
+            studentCurrentPage,
+            studentItemsPerPage,
+            taCurrentPage,
+            taItemsPerPage,
+        };
+        sessionStorage.setItem('graderTickets_filters', JSON.stringify(filters));
+    }, [activeFilters, hideResolved, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, isInitialized]);
+
+    useEffect(() => {
+        if (!isInitialized) return;
+        loadTickets();
+    }, [isInitialized]);
 
     useEffect(() => {
         applyFilters();
@@ -131,6 +168,15 @@ const GraderTickets = () => {
             );
         }
 
+        // Apply search filter (search by section number)
+        if (activeFilters.sectionSearch) {
+            filtered = filtered.filter((ticket) =>
+                ticket.section
+                    ?.toLowerCase()
+                    .includes(activeFilters.sectionSearch.toLowerCase())
+            );
+        }
+
         // Apply source filter
         if (activeFilters.source) {
             filtered = filtered.filter(
@@ -186,7 +232,7 @@ const GraderTickets = () => {
     };
 
     const handleClearFilters = () => {
-        setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "" });
+        setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "", sectionSearch: "" });
     };
 
     const handleStudentPageChange = (pageNumber) => {
@@ -471,6 +517,15 @@ const GraderTickets = () => {
                         value={activeFilters.teamNameSearch}
                         onChange={(e) =>
                             setActiveFilters({ ...activeFilters, teamNameSearch: e.target.value })
+                        }
+                        sx={{ flex: 1 }}
+                    />
+                    <TextField
+                        label="Search by Section Number"
+                        variant="outlined"
+                        value={activeFilters.sectionSearch}
+                        onChange={(e) =>
+                            setActiveFilters({ ...activeFilters, sectionSearch: e.target.value })
                         }
                         sx={{ flex: 1 }}
                     />

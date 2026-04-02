@@ -112,6 +112,7 @@ const TaRequestTickets = () => {
                     data.map(async (t) => ({
                         ...t,
                         userName: await fetchNameFromId(t.ta_id),
+                        student_name: await fetchNameFromId(t.on_behalf_of),
                     }))
                 );
 

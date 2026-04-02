@@ -36,6 +36,7 @@ const AllTickets = () => {
     source: null,
     search: "",
     teamNameSearch: "",
+    sectionSearch:"",
   });
 
 
@@ -62,16 +63,53 @@ const AllTickets = () => {
 
   const [studentTickets, setStudentTickets] = useState([]);
   const [taTickets, setTaTickets] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
 
   useEffect(() => {
+    const savedFilters = sessionStorage.getItem('allTickets_filters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      setActiveFilters(filters.activeFilters || {
+        sort: null,
+        status: null,
+        source: null,
+        search: "",
+        teamNameSearch: "",
+        sectionSearch: "",
+      });
+      setHideResolved(filters.hideResolved ?? true);
+      setStudentCurrentPage(filters.studentCurrentPage || 1);
+      setStudentItemsPerPage(filters.studentItemsPerPage || 10);
+      setTaCurrentPage(filters.taCurrentPage || 1);
+      setTaItemsPerPage(filters.taItemsPerPage || 10);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const filters = {
+      activeFilters,
+      hideResolved,
+      studentCurrentPage,
+      studentItemsPerPage,
+      taCurrentPage,
+      taItemsPerPage,
+    };
+    sessionStorage.setItem('allTickets_filters', JSON.stringify(filters));
+  }, [activeFilters, hideResolved, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, isInitialized]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
     fetchTickets();
-  }, [hideResolved]);
+  }, [hideResolved, isInitialized]);
 
 
 
   useEffect(() => {
     applyFilters();
-  }, [tickets, activeFilters.search, activeFilters.teamNameSearch, activeFilters.source, activeFilters.sort, activeFilters.status, hideResolved, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage]);
+  }, [tickets, activeFilters.search, activeFilters.teamNameSearch, activeFilters.sectionSearch, activeFilters.source, activeFilters.sort, activeFilters.status, hideResolved, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage]);
 
   useEffect(() => {
     if (activeFilters.status && activeFilters.status.toLowerCase() === "resolved") {
@@ -138,6 +176,15 @@ const AllTickets = () => {
     filteredStudentTickets = applyFiltersToArray(studentTickets);
     filteredTaTickets = applyFiltersToArray(taTickets);
 
+    //Apply section filter to student tickets only
+    if (activeFilters.sectionSearch) {
+      filteredStudentTickets = filteredStudentTickets.filter((ticket) =>
+        (ticket.section || "")
+          .toLowerCase()
+          .includes(activeFilters.sectionSearch.toLowerCase())
+      );
+    }
+
     // Apply source filter if specified
     if (activeFilters.source) {
       if (activeFilters.source === 'student') {
@@ -187,7 +234,7 @@ const AllTickets = () => {
   };
 
   const handleClearFilters = () => {
-    setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "" });
+    setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "", sectionSearch: "" });
   };
 
     const fetchUserNameForTicket = async (ticket) => {
@@ -570,6 +617,16 @@ const AllTickets = () => {
             }
             sx={{ flex: 1 }}
           />
+
+          <TextField
+            label="Search by Section"
+            variant="outlined"
+            value={activeFilters.sectionSearch}
+            onChange={(e) =>
+              setActiveFilters({ ...activeFilters, sectionSearch: e.target.value })
+            }
+            sx={{ flex: 1 }}
+          />
           <Button
             variant="contained"
             onClick={handleFilterClick}
@@ -805,6 +862,7 @@ const AllTickets = () => {
                                   tickets={filteredTickets.filter(ticket => ticket.source === 'ta')}
                                   defaultView="list"
                                   onOpenTicket={(t) => navigate(`/taticketinfo?ticket=${t.ticket_id}`)}
+                                  enableShare={true}
                               />
                               {/* TA Tickets Pagination */}
                               {taPagination.totalPages > 1 && (

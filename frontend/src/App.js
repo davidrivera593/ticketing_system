@@ -35,11 +35,18 @@ import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
+<<<<<<< HEAD
 import BugReportsList from "./pages/BugReportsList";
+=======
+import FAQ from "./pages/FAQ/FAQ";
+>>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
 import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
 import GraderTickets from "./pages/GraderTickets/GraderTickets";
 import GraderSettings from "./pages/Settings/GraderSettings";
+import DeveloperDash from "./pages/DeveloperDash/DeveloperDash";
+import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
+
 
 function App() {
   return (
@@ -50,6 +57,27 @@ function App() {
       <Route path="/registration" element={<Registration />} />
       <Route path="/resetpassword" element={<ResetPassword />} />
       <Route path="/requestreset" element={<RequestReset />} />
+      
+      {/* Change password - protected but without navbar (forced flow) */}
+      <Route 
+        path="/change-password" 
+        element={
+          <ProtectedRoute
+            element={<ChangePassword />}
+            authorizedRoles={["admin", "student", "TA", "grader", "developer"]}
+          />
+        } 
+      />
+
+      <Route
+        path="/developerdash"
+        element={
+          <ProtectedRoute
+            element={<DeveloperDash />}
+            authorizedRoles={["developer"]}
+          />
+        }
+      />
 
       {/*Verify that user is logged in before rendering any of these routes*/}
       <Route
@@ -61,17 +89,19 @@ function App() {
         }
       >
           {/* --- Shared Pages--- */}
-  <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
-    <Route path="/change-password" element={<ChangePassword />} />
-    <Route path="/allassignees" element={<AllAssignees />} />
-    <Route path="/profile" element={<Profile />} />
-    <Route path="/ta-info" element={<TAinfo />} />
-    <Route path="/ticketview" element={<TicketView />} />
-    <Route path="/ticketinfo" element={<TicketInfo />} />
-    <Route path="/instructorprofile" element={<InstructorProfile />} />
-    <Route path="/mytickets" element={<MyTickets />} />
-    <Route path="/bug-report" element={<BugReportPage />} />
-    <Route path="/bug-reports-list" element={<BugReportsList />} />
+{/* --- Shared Pages--- */}
+<Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
+  <Route path="/change-password" element={<ChangePassword />} />
+  <Route path="/allassignees" element={<AllAssignees />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/ta-info" element={<TAinfo />} />
+  <Route path="/ticketview" element={<TicketView />} />
+  <Route path="/ticketinfo" element={<TicketInfo />} />
+  <Route path="/instructorprofile" element={<InstructorProfile />} />
+  <Route path="/mytickets" element={<MyTickets />} />
+  <Route path="/bug-report" element={<BugReportPage />} />
+  <Route path="/bug-reports-list" element={<BugReportsList />} />
+  <Route path="/help/faq" element={<FAQ />} />
 </Route>
 
           <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
@@ -106,6 +136,8 @@ function App() {
               <Route path="/tasettings" element={<TASettings />} />
               <Route path="/instructortickets" element={<InstructorTickets />} />
               <Route path="/TaRequestTickets" element={<TaRequestTickets />} />
+              <Route path="/escalatedticketsTA" element={<EscalatedTicketsTA />} />
+
           </Route>
 
           {/* --- Grader Pages--- */}
@@ -113,6 +145,7 @@ function App() {
               <Route path="/gradersettings" element={<GraderSettings />} />
               <Route path="/graderdash" element={<GraderDash />} />
               <Route path="/gradertickets" element={<GraderTickets />} />
+
           </Route>
 
       </Route>

@@ -19,6 +19,7 @@ exports.getAllTickets = async (req, res) => {
             team_id,
             assigned_to,
             escalated,
+            on_behalf_of,
             hideResolved,
             sort
         } = req.query;
@@ -42,6 +43,7 @@ exports.getAllTickets = async (req, res) => {
         if (team_id) whereClause.team_id = team_id;
         if (assigned_to) whereClause.assigned_to = assigned_to;
         if (escalated !== undefined) whereClause.escalated = escalated === 'true';
+        if (on_behalf_of) whereClause.on_behalf_of = on_behalf_of;
         // Only apply hideResolved when there is no explicit status filter provided
         if (hideResolved === 'true' && typeof whereClause.status === 'undefined') {
             const { Op } = require('sequelize');
@@ -81,6 +83,11 @@ exports.getAllTickets = async (req, res) => {
                     model: User, 
                     as: "TA", 
                     attributes: ["name", "email"] 
+                },
+                {
+                    model: User,
+                    as: "student",
+                    attributes: ["name", "email"]
                 }
             ]
         });
@@ -129,6 +136,7 @@ exports.getAllTickets = async (req, res) => {
         const ticketsWithNames = rows.map(ticket => ({
             ...ticket.dataValues,
             ta_name: ticket.TA ? ticket.TA.name : "Unknown TA",
+            student_name: ticket.student ? ticket.student.name : "N/A",
         }));
 
         res.json({
@@ -157,13 +165,16 @@ exports.getTicketsByUserId = async (req, res) => {
     try {
         const tickets = await TaTicket.findAll({
             where: { ta_id: req.params.user_id },
-            include: [{ model: User, as: "TA", attributes: ["name"] }], //  Fetch TA name
+            include: [{ model: User, as: "TA", attributes: ["name"] },
+                {model: User, as: "student", attributes: ["name", "email"]
+            }   ], //  Fetch TA name
         });
 
         // Add ta_name manually if needed
         const ticketsWithNames = tickets.map(ticket => ({
             ...ticket.dataValues,
             ta_name: ticket.ta ? ticket.ta.name : "Unknown TA",
+            student_name: ticket.student ? ticket.student.name : "N/A",
         }));
 
         res.json(ticketsWithNames);
@@ -187,11 +198,10 @@ exports.getTicketById = async (req, res) => {
 
         //Make sure ticketId includes associated TA name as well.
         const ticket = await TaTicket.findByPk(ticketId, {
-            include: [{
-                model: User,
-                as: 'TA',
-                attributes: ['name']
-            }]
+            include: [
+                { model: User, as: 'TA', attributes: ['name'] },
+                { model: User, as: 'student', attributes: ['name'] }
+            ]
         });
 
         if (ticket) {
@@ -262,32 +272,34 @@ exports.getTicketResponseTime = async (req, res) => {
 };
 
 exports.getAllTicketDataById = async (req, res) => {
-    console.log(" Request from User:", req.user);
-    console.log(" Requested Ticket ID:", req.params.ticket_id);
-
-    if (req.user.role !== 'admin') {
-        const ticket = await TaTicket.findByPk(req.params.ticket_id);
-        const ticketAssignments = await TaTicketAssignment.findAll({where: { ticket_id: req.params.ticket_id },});
-        const firstAssignment = ticketAssignments[0]; // Get the first element
-        if (
-            !(!ticket || ticket.ta_id !== req.user_id) &&
-            (!firstAssignment || firstAssignment.user_id !== req.user_id)
-        ) {
-            console.log(" Access Denied - User is not allowed to view this ticket.");
-            return res.status(403).json({ error: "Access denied: You can only view your own tickets." });
-        }
-    }
-
     try {
-        const ticket = await TaTicket.findByPk(req.params.ticket_id);
-        if (ticket) {
-            const ta = await User.findByPk(ticket.dataValues.ta_id);
-            ticket.dataValues.ta_name = ta.dataValues.name;
+        const { ticket_id } = req.params;
 
-            res.json(ticket);
-        } else {
-            res.status(404).json({ error: "Ticket not found" });
+        const ticket = await TaTicket.findByPk(ticket_id, {
+            include: [
+                { model: User, as: 'TA', attributes: ['name', 'email'] },
+                { model: User, as: 'student', attributes: ['name', 'email'] }
+            ]
+        });
+
+        if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+        // Admin/Authorization Check
+        if (req.user.role !== 'admin') {
+            const assignment = await TaTicketAssignment.findOne({
+                where: { ticket_id: ticket_id, user_id: req.user.id }
+            });
+            if (ticket.ta_id !== req.user.id && !assignment) {
+                return res.status(403).json({ error: "Access denied" });
+            }
         }
+
+        // Add the names manually for your frontend to find
+        const data = ticket.get({ plain: true });
+        data.ta_name = ticket.TA ? ticket.TA.name : "Unknown TA";
+        data.student_name = ticket.student ? ticket.student.name : "N/A";
+
+        res.json(data);
     } catch (error) {
         res.status(511).json({ error: error.message });
     }
@@ -295,30 +307,36 @@ exports.getAllTicketDataById = async (req, res) => {
 
 exports.createTicket = async (req, res) => {
     try {
-        console.log(" Request Body:", req.body); //  Debugging input data
+        console.log(" Request Body:", req.body);
 
-        const { ta_id } = req.body;
+        const { ta_id, student_id, issue_description, issue_type } = req.body;
 
-        // Check if TA exists
+        // 1. Validate TA
         const ta = await User.findByPk(ta_id);
-        if (!ta) {
-            console.error(" TA not found in database:", ta_id);
-            return res.status(404).json({ error: "TA not found" });
-        }
+        if (!ta) return res.status(404).json({ error: "TA not found" });
 
-        console.log(" TA found:", ta.name); //  Log correct name
+        // 2. Validate Student
+        const student = await User.findByPk(student_id);
+        if (!student) return res.status(404).json({ error: "Student not found" });
 
-        // Create ticket
-        const ticket = await TaTicket.create(req.body);
+        // 3. Create ticket with EXPLICIT mapping
+        const ticket = await TaTicket.create({
+            ta_id,
+            on_behalf_of: student_id, // This links the two!
+            issue_description,
+            issue_type,
+            // Add any other fields from req.body you need here
+        });
 
         res.status(201).json({
-            ...ticket.dataValues,
-            ta_name: ta.name, // Ensure correct name is returned
+            ...ticket.get({ plain: true }), // Cleaner way to get dataValues
+            ta_name: ta.name,
+            student_name: student.name,
         });
 
     } catch (error) {
         console.error(" Error creating ticket:", error);
-        res.status(512).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
