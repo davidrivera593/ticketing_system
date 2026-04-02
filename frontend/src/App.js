@@ -35,11 +35,8 @@ import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
-<<<<<<< HEAD
 import BugReportsList from "./pages/BugReportsList";
-=======
 import FAQ from "./pages/FAQ/FAQ";
->>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
 import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
 import GraderTickets from "./pages/GraderTickets/GraderTickets";
