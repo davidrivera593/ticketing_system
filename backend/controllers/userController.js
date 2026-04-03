@@ -182,7 +182,7 @@ exports.getUsersByRole = async (req, res) => {
                 {
                     model: StudentData,
                     required: false,
-                    attributes: ['section'],
+                    attributes: ['section', 'semester'],
                     include: [
                         {
                             model: Team,
@@ -203,14 +203,15 @@ exports.getUsersByRole = async (req, res) => {
                 const sData = u.StudentData || u.StudentDatum || {};
                 const team = sData.Team || {};
 
-                return {
-                    user_id: u.user_id,
-                    name: u.name,
-                    email: u.email,
-                    is_enabled: u.is_enabled,
-                    section: sData.section || "N/A",
-                    sponsor: team.sponsor_name || "N/A",
-                    team_name: team.team_name || "N/A"
+              return {
+                  user_id: u.user_id,
+                  name: u.name,
+                  email: u.email,
+                  is_enabled: u.is_enabled,
+                  semester: sData.semester || "N/A",
+                  section: sData.section || "N/A",
+                  sponsor: team.sponsor_name || "N/A",
+                  team_name: team.team_name || "N/A"
                 };
             }
             return u;

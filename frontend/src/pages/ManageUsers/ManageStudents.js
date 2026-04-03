@@ -25,6 +25,14 @@ import {
     alpha,
     TextField,
     InputAdornment,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
+    FormControl,
+    InputLabel,
+    Select,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import SearchIcon from "@mui/icons-material/Search";
@@ -45,6 +53,18 @@ const ManageStudents = () => {
     // Add new state for search query
     const [searchQuery, setSearchQuery] = useState("");
 
+    // ---  STATES FOR TEAM ASSIGNMENT ---
+    const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+    const [teams, setTeams] = useState([]);
+    const [selectedTeamId, setSelectedTeamId] = useState("");
+    const [isAssigning, setIsAssigning] = useState(false);
+    const [studentsToAssign, setStudentsToAssign] = useState([]);
+
+    // --- STATES FOR SECTION ASSIGNMENT ---
+    const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
+    const [selectedSection, setSelectedSection] = useState("");
+    const [isAssigningSection, setIsAssigningSection] = useState(false);
+
     const [isLoading, setIsLoading] = useState(true);
     const token = Cookies.get("token");
     const theme = useTheme();
@@ -53,6 +73,7 @@ const ManageStudents = () => {
     // Initial data fetch
     useEffect(() => {
         fetchStudents();
+        fetchTeams();
     }, []);
 
     // useEffect now handles filtering AND search
@@ -74,6 +95,7 @@ const ManageStudents = () => {
                 const email = student.email?.toLowerCase() || "";
                 const team = student.team_name?.toLowerCase() || "n/a";
                 const sponsor = student.sponsor?.toLowerCase() || "n/a";
+                const semester = student.semester?.toLowerCase() || "n/a";
                 const section = student.section?.toLowerCase() || "n/a";
 
                 return (
@@ -81,6 +103,7 @@ const ManageStudents = () => {
                     email.includes(lowerCaseQuery) ||
                     team.includes(lowerCaseQuery) ||
                     sponsor.includes(lowerCaseQuery) ||
+                    semester.includes(lowerCaseQuery) ||
                     section.includes(lowerCaseQuery)
                 );
             });
@@ -110,6 +133,24 @@ const ManageStudents = () => {
             console.error("Failed to load students:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchTeams = async () => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/teams`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setTeams(data); // Assuming the API returns an array of team objects
+            }
+        } catch (error) {
+            console.error("Failed to fetch teams:", error);
         }
     };
 
@@ -212,6 +253,97 @@ const ManageStudents = () => {
         setMenuAnchorEl(null);
     };
 
+    const handleAssignTeamSubmit = async () => {
+        if (!selectedTeamId) return;
+        setIsAssigning(true);
+
+        // Find the team name for the optimistic UI update
+        const selectedTeam = teams.find(t => t.team_id === selectedTeamId);
+
+        // 1. Optimistic UI update
+        setStudents((currentStudents) =>
+            currentStudents.map((student) =>
+                studentsToAssign.includes(student.user_id)
+                    ? { ...student, team_name: selectedTeam?.team_name, team_id: selectedTeamId }
+                    : student
+            )
+        );
+
+        // 2. Fire API requests (Targeting the StudentData route)
+        const updatePromises = studentsToAssign.map(studentId =>
+            fetch(`${process.env.REACT_APP_API_BASE_URL}/api/studentData/${studentId}`, { // <-- UPDATED ROUTE HERE
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ team_id: selectedTeamId }),
+            }).then(res => {
+                if (!res.ok) throw new Error(`Failed to assign team for ${studentId}`);
+                return studentId;
+            })
+        );
+
+        const results = await Promise.allSettled(updatePromises);
+
+        const failedUpdates = results.filter(result => result.status === "rejected");
+        if (failedUpdates.length > 0) {
+            alert(`${failedUpdates.length} student(s) failed to update. Please try again or refresh.`);
+            fetchStudents(); // Re-fetch to guarantee sync on failure
+        }
+
+        // 3. Cleanup and close dialog
+        setIsAssigning(false);
+        setIsTeamDialogOpen(false);
+        setSelectedStudents([]); // Clear checkboxes
+        setSelectedTeamId(""); // Reset dropdown
+    };
+
+    const handleEditSectionSubmit = async () => {
+        const trimmedSection = selectedSection.trim();
+        if (!trimmedSection) return;
+
+        setIsAssigningSection(true);
+
+        // 1. Optimistic UI update
+        setStudents((currentStudents) =>
+            currentStudents.map((student) =>
+                studentsToAssign.includes(student.user_id)
+                    ? { ...student, section: trimmedSection }
+                    : student
+            )
+        );
+
+        // 2. Fire API requests targeting the StudentData route
+        const updatePromises = studentsToAssign.map(studentId =>
+            fetch(`${process.env.REACT_APP_API_BASE_URL}/api/studentData/${studentId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ section: trimmedSection }),
+            }).then(res => {
+                if (!res.ok) throw new Error(`Failed to assign section for ${studentId}`);
+                return studentId;
+            })
+        );
+
+        const results = await Promise.allSettled(updatePromises);
+
+        const failedUpdates = results.filter(result => result.status === "rejected");
+        if (failedUpdates.length > 0) {
+            alert(`${failedUpdates.length} student(s) failed to update. Please try again or refresh.`);
+            fetchStudents(); // Re-fetch to guarantee sync on failure
+        }
+
+        // 3. Cleanup and close dialog
+        setIsAssigningSection(false);
+        setIsSectionDialogOpen(false);
+        setSelectedStudents([]); // Clear checkboxes
+        setSelectedSection(""); // Reset input
+    };
+
     // Bulk action logic
     const handleMenuAction = async (action) => {
         handleMenuClose(); // Close the menu
@@ -222,9 +354,14 @@ const ManageStudents = () => {
         } else if (action === 'disable') {
             targetStatus = false;
         } else if (action === 'assign_team') {
-            alert(`Assigning team for ${selectedStudents.length} students.`);
-            setSelectedStudents([]); // Clear selection
-            return; // Stop here for other actions
+            // Save the currently selected students so we know who to update
+            setStudentsToAssign([...selectedStudents]);
+            setIsTeamDialogOpen(true);
+            return; // Stop here, the Dialog takes over
+        } else if (action === 'edit_section') {
+            setStudentsToAssign([...selectedStudents]);
+            setIsSectionDialogOpen(true);
+            return;
         } else {
             return; // Unknown action
         }
@@ -343,7 +480,7 @@ const ManageStudents = () => {
                     <TextField
                         fullWidth
                         variant="outlined"
-                        placeholder="Search by name, email, team, sponsor, or section..."
+                        placeholder="Search by name, email, team, sponsor, semester, or section..."
                         value={searchQuery}
                         onChange={handleSearchChange}
                         InputProps={{
@@ -409,6 +546,7 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('enable')}>Enable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('disable')}>Disable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
+                            <MenuItem onClick={() => handleMenuAction('edit_section')}>Edit Section</MenuItem>
                         </Menu>
                     </Toolbar>
                 )}
@@ -442,6 +580,9 @@ const ManageStudents = () => {
                                     </TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
                                         Sponsor
+                                    </TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
+                                        Semester
                                     </TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
                                         Section
@@ -498,6 +639,12 @@ const ManageStudents = () => {
                                                 align="center"
                                                 sx={{ color: theme.palette.text.primary }}
                                             >
+                                                {student.semester || "N/A"}
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ color: theme.palette.text.primary }}
+                                            >
                                                 {student.section || "N/A"}
                                             </TableCell>
                                             <TableCell align="center">
@@ -517,6 +664,107 @@ const ManageStudents = () => {
                     </TableContainer>
                 )}
             </Box>
+            <Dialog
+                open={isTeamDialogOpen}
+                onClose={() => !isAssigning && setIsTeamDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Assign Team</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 3 }}>
+                        Select a team to assign to the {studentsToAssign.length} selected student(s).
+                    </DialogContentText>
+                    <FormControl fullWidth>
+                        <InputLabel id="team-select-label">Team</InputLabel>
+                        <Select
+                            labelId="team-select-label"
+                            value={selectedTeamId}
+                            label="Team"
+                            onChange={(e) => setSelectedTeamId(e.target.value)}
+                            disabled={isAssigning}
+                        >
+                            {teams.map((team) => (
+                                <MenuItem key={team.team_id} value={team.team_id}>
+                                    {team.team_name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setIsTeamDialogOpen(false)}
+                        disabled={isAssigning}
+                        sx={{ color: theme.palette.text.secondary }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleAssignTeamSubmit}
+                        disabled={!selectedTeamId || isAssigning}
+                    >
+                        {isAssigning ? <CircularProgress size={24} color="inherit" /> : "Assign"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* --- EDIT SECTION DIALOG --- */}
+            <Dialog
+                open={isSectionDialogOpen}
+                onClose={() => !isAssigningSection && setIsSectionDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Edit Section</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 3 }}>
+                        Enter the new section number for the {studentsToAssign.length} selected student(s).
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="section"
+                        label="Section Number"
+                        type="text" // Keep as text to prevent the up/down arrows, but enforce numbers via regex
+                        fullWidth
+                        variant="outlined"
+                        value={selectedSection}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            // Only update state if the value is empty OR contains only numbers
+                            if (value === '' || /^[0-9]+$/.test(value)) {
+                                setSelectedSection(value);
+                            }
+                        }}
+                        disabled={isAssigningSection}
+                        slotProps={{
+                            htmlInput: {
+                                inputMode: 'numeric',
+                                pattern: '[0-9]*',
+                                maxLength: 10 // Optional: prevent absurdly long section numbers
+                            }
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setIsSectionDialogOpen(false)}
+                        disabled={isAssigningSection}
+                        sx={{ color: theme.palette.text.secondary }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleEditSectionSubmit}
+                        disabled={!selectedSection.trim() || isAssigningSection}
+                    >
+                        {isAssigningSection ? <CircularProgress size={24} color="inherit" /> : "Save Section"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

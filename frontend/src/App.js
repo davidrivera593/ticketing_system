@@ -34,7 +34,9 @@ import BulkUpload from "./pages/BulkUpload/BulkUpload";
 import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
+import ManageTeams from "./pages/ManageUsers/ManageTeams";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
+import BugReportsList from "./pages/BugReportsList";
 import FAQ from "./pages/FAQ/FAQ";
 import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
@@ -55,20 +57,19 @@ function App() {
       <Route path="/resetpassword" element={<ResetPassword />} />
       <Route path="/requestreset" element={<RequestReset />} />
       
-      {/* Change password - protected but without navbar (forced flow) */}
-      <Route 
-        path="/change-password" 
-        element={
-          <ProtectedRoute
-            element={<ChangePassword />}
-            authorizedRoles={["admin", "student", "TA", "grader", "developer"]}
-          />
-        } 
-      />
 
-      <Route
-        path="/developerdash"
-        element={
+          <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
+            <Route path="/allassignees" element={<AllAssignees />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/ta-info" element={<TAinfo />} />
+            <Route path="/ticketview" element={<TicketView />} />
+            <Route path="/ticketinfo" element={<TicketInfo />} />
+            <Route path="/instructorprofile" element={<InstructorProfile />} />
+            <Route path="/mytickets" element={<MyTickets />} />
+            <Route path="/bug-report" element={<BugReportPage />} />
+            <Route path="/bug-reports-list" element={<BugReportsList />} />
+            <Route path="/help/faq" element={<FAQ />} />
+          </Route>
           <ProtectedRoute
             element={<DeveloperDash />}
             authorizedRoles={["developer"]}
@@ -86,18 +87,20 @@ function App() {
         }
       >
           {/* --- Shared Pages--- */}
-          <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
-              <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/allassignees" element={<AllAssignees />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/ta-info" element={<TAinfo />} />
-              <Route path="/ticketview" element={<TicketView />} />
-              <Route path="/ticketinfo" element={<TicketInfo />} />
-              <Route path="/instructorprofile" element={<InstructorProfile />} />
-              <Route path="/mytickets" element={<MyTickets />} />
-              <Route path="/bug-report" element={<BugReportPage />} />
-              <Route path="/help/faq" element={<FAQ />} />
-          </Route>
+{/* --- Shared Pages--- */}
+<Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
+  <Route path="/change-password" element={<ChangePassword />} />
+  <Route path="/allassignees" element={<AllAssignees />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/ta-info" element={<TAinfo />} />
+  <Route path="/ticketview" element={<TicketView />} />
+  <Route path="/ticketinfo" element={<TicketInfo />} />
+  <Route path="/instructorprofile" element={<InstructorProfile />} />
+  <Route path="/mytickets" element={<MyTickets />} />
+  <Route path="/bug-report" element={<BugReportPage />} />
+  <Route path="/bug-reports-list" element={<BugReportsList />} />
+  <Route path="/help/faq" element={<FAQ />} />
+</Route>
 
           <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
               <Route path="/ticketsubmit" element={<TicketSubmit />} />
@@ -113,6 +116,7 @@ function App() {
               <Route path="/managestudents" element={<ManageStudents />} />
               <Route path="/manageadmins" element={<ManageAdmins />} />
               <Route path="/manageTAs" element={<ManageTAs />} />
+              <Route path="/manageTeams" element={<ManageTeams />} />
               <Route path="/manageGraders" element={<ManageGraders />} />
               <Route path="/bulkupload" element={<BulkUpload />} />
               <Route path="/escalatedtickets" element={<EscalatedTickets />} />
