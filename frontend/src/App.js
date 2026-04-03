@@ -34,6 +34,7 @@ import BulkUpload from "./pages/BulkUpload/BulkUpload";
 import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
+import ManageTeams from "./pages/ManageUsers/ManageTeams";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
 import FAQ from "./pages/FAQ/FAQ";
 import ManageGraders from "./pages/ManageUsers/ManageGraders";
@@ -112,10 +113,12 @@ function App() {
               <Route path="/managestudents" element={<ManageStudents />} />
               <Route path="/manageadmins" element={<ManageAdmins />} />
               <Route path="/manageTAs" element={<ManageTAs />} />
+              <Route path="/manageTeams" element={<ManageTeams />} />
               <Route path="/manageGraders" element={<ManageGraders />} />
               <Route path="/bulkupload" element={<BulkUpload />} />
               <Route path="/escalatedtickets" element={<EscalatedTickets />} />
               <Route path="/alltickets" element={<AllTickets />} />
+
           </Route>
 
           {/* --- Student Pages--- */}
