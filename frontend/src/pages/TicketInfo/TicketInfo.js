@@ -198,6 +198,34 @@ const TicketInfo = () => {
     }
   };
 
+  const handleUnshare = async (userId) => {
+    const confirmed = window.confirm("Are you sure you want to unshare this ticket from this user?");
+    if (!confirmed) return;
+
+    try {
+      const token = Cookies.get("token");
+      const response = await fetch(
+        `${baseURL}/api/ticketassignments/ticket/${ticketId}/assignment/${userId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to unshare ticket");
+      }
+
+      fetchAssignedTaID();
+    } catch (error) {
+      console.error("Error unsharing ticket:", error);
+      alert("Failed to unshare ticket.");
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [ticketId]);
@@ -415,12 +443,23 @@ const TicketInfo = () => {
                 {assignedTAIds.length > 0 ? (
                   <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1, mt: 0.5 }}>
                     {assignedTAIds.map((taId) => (
-                      <Chip
-                        key={taId}
-                        label={idToNameMap[taId]?.name || `TA ${taId}`}
-                        size="small"
-                        sx={{ fontWeight: 500 }}
-                      />
+                      <Box key={taId} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Chip
+                          label={idToNameMap[taId]?.name || `TA ${taId}`}
+                          size="small"
+                          sx={{ fontWeight: 500 }}
+                        />
+                        {userType === "admin" && (
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="text"
+                            onClick={() => handleUnshare(taId)}
+                          >
+                            Unshare
+                          </Button>
+                        )}
+                      </Box>
                     ))}
                   </Box>
                 ) : (
@@ -523,4 +562,3 @@ export default TicketInfo;
 
 
 //github tracking 
-
