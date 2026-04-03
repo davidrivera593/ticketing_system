@@ -57,19 +57,20 @@ function App() {
       <Route path="/resetpassword" element={<ResetPassword />} />
       <Route path="/requestreset" element={<RequestReset />} />
       
+      {/* Change password - protected but without navbar (forced flow) */}
+      <Route 
+        path="/change-password" 
+        element={
+          <ProtectedRoute
+            element={<ChangePassword />}
+            authorizedRoles={["admin", "student", "TA", "grader", "developer"]}
+          />
+        } 
+      />
 
-          <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
-            <Route path="/allassignees" element={<AllAssignees />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/ta-info" element={<TAinfo />} />
-            <Route path="/ticketview" element={<TicketView />} />
-            <Route path="/ticketinfo" element={<TicketInfo />} />
-            <Route path="/instructorprofile" element={<InstructorProfile />} />
-            <Route path="/mytickets" element={<MyTickets />} />
-            <Route path="/bug-report" element={<BugReportPage />} />
-            <Route path="/bug-reports-list" element={<BugReportsList />} />
-            <Route path="/help/faq" element={<FAQ />} />
-          </Route>
+      <Route
+        path="/developerdash"
+        element={
           <ProtectedRoute
             element={<DeveloperDash />}
             authorizedRoles={["developer"]}
@@ -87,20 +88,19 @@ function App() {
         }
       >
           {/* --- Shared Pages--- */}
-{/* --- Shared Pages--- */}
-<Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
-  <Route path="/change-password" element={<ChangePassword />} />
-  <Route path="/allassignees" element={<AllAssignees />} />
-  <Route path="/profile" element={<Profile />} />
-  <Route path="/ta-info" element={<TAinfo />} />
-  <Route path="/ticketview" element={<TicketView />} />
-  <Route path="/ticketinfo" element={<TicketInfo />} />
-  <Route path="/instructorprofile" element={<InstructorProfile />} />
-  <Route path="/mytickets" element={<MyTickets />} />
-  <Route path="/bug-report" element={<BugReportPage />} />
-  <Route path="/bug-reports-list" element={<BugReportsList />} />
-  <Route path="/help/faq" element={<FAQ />} />
-</Route>
+
+          <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
+            <Route path="/allassignees" element={<AllAssignees />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/ta-info" element={<TAinfo />} />
+            <Route path="/ticketview" element={<TicketView />} />
+            <Route path="/ticketinfo" element={<TicketInfo />} />
+            <Route path="/instructorprofile" element={<InstructorProfile />} />
+            <Route path="/mytickets" element={<MyTickets />} />
+            <Route path="/bug-report" element={<BugReportPage />} />
+            <Route path="/bug-reports-list" element={<BugReportsList />} />
+            <Route path="/help/faq" element={<FAQ />} />
+          </Route>
 
           <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
               <Route path="/ticketsubmit" element={<TicketSubmit />} />
