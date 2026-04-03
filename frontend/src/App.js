@@ -42,6 +42,7 @@ import GraderTickets from "./pages/GraderTickets/GraderTickets";
 import GraderSettings from "./pages/Settings/GraderSettings";
 import DeveloperDash from "./pages/DeveloperDash/DeveloperDash";
 import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
+import EmailLogs from "./pages/EmailLogs/EmailLogs";
 
 
 function App() {
@@ -116,6 +117,7 @@ function App() {
               <Route path="/bulkupload" element={<BulkUpload />} />
               <Route path="/escalatedtickets" element={<EscalatedTickets />} />
               <Route path="/alltickets" element={<AllTickets />} />
+              <Route path="/email-logs" element={<EmailLogs />} />
           </Route>
 
           {/* --- Student Pages--- */}

@@ -645,6 +645,38 @@ const AdminSettings = () => {
         </Box>
       </Box>
 
+      <Box
+        sx={{
+          marginBottom: 5,
+          backgroundColor: theme.palette.background.paper,
+          borderRadius: "10px",
+          border: `1px solid ${theme.palette.divider}`,
+          padding: 2.5,
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
+            marginBottom: 2.5,
+            fontWeight: "bold",
+            color: theme.palette.text.primary
+          }}
+        >
+          System Monitoring
+        </Typography>
+
+        <Box sx={{ marginBottom: 1.25, display: "flex", justifyContent: "left", gap: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/email-logs")}
+            sx={{ backgroundColor: theme.palette.primary.main }}
+          >
+            Email Logs
+          </Button>
+        </Box>
+      </Box>
+
       <Box sx={{ marginBottom: 1.25, display: "flex", justifyContent: "center", gap: 2 }}>
         <Button
           variant="contained"

@@ -5,7 +5,8 @@ const TeamMember = require("./TeamMember");
 const TicketAssignment = require("./TicketAssignment");
 const PasswordResetToken = require("./PasswordResetToken");
 const StudentData = require("./StudentData");
-const BugReport = require("./bugreport"); 
+const BugReport = require("./bugreport");
+const EmailLog = require("./EmailLog");
 
 // Associations
 User.hasMany(TeamMember, { foreignKey: "user_id" });
@@ -36,5 +37,6 @@ module.exports = {
   TicketAssignment,
   PasswordResetToken,
   StudentData,
-  BugReport, 
+  BugReport,
+  EmailLog,
 };
