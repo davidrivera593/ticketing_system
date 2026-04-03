@@ -44,6 +44,7 @@ import GraderTickets from "./pages/GraderTickets/GraderTickets";
 import GraderSettings from "./pages/Settings/GraderSettings";
 import DeveloperDash from "./pages/DeveloperDash/DeveloperDash";
 import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
+import EmailLogs from "./pages/EmailLogs/EmailLogs";
 
 
 function App() {
@@ -87,20 +88,19 @@ function App() {
         }
       >
           {/* --- Shared Pages--- */}
-{/* --- Shared Pages--- */}
-<Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
-  <Route path="/change-password" element={<ChangePassword />} />
-  <Route path="/allassignees" element={<AllAssignees />} />
-  <Route path="/profile" element={<Profile />} />
-  <Route path="/ta-info" element={<TAinfo />} />
-  <Route path="/ticketview" element={<TicketView />} />
-  <Route path="/ticketinfo" element={<TicketInfo />} />
-  <Route path="/instructorprofile" element={<InstructorProfile />} />
-  <Route path="/mytickets" element={<MyTickets />} />
-  <Route path="/bug-report" element={<BugReportPage />} />
-  <Route path="/bug-reports-list" element={<BugReportsList />} />
-  <Route path="/help/faq" element={<FAQ />} />
-</Route>
+
+          <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
+            <Route path="/allassignees" element={<AllAssignees />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/ta-info" element={<TAinfo />} />
+            <Route path="/ticketview" element={<TicketView />} />
+            <Route path="/ticketinfo" element={<TicketInfo />} />
+            <Route path="/instructorprofile" element={<InstructorProfile />} />
+            <Route path="/mytickets" element={<MyTickets />} />
+            <Route path="/bug-report" element={<BugReportPage />} />
+            <Route path="/bug-reports-list" element={<BugReportsList />} />
+            <Route path="/help/faq" element={<FAQ />} />
+          </Route>
 
           <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
               <Route path="/ticketsubmit" element={<TicketSubmit />} />
@@ -121,7 +121,7 @@ function App() {
               <Route path="/bulkupload" element={<BulkUpload />} />
               <Route path="/escalatedtickets" element={<EscalatedTickets />} />
               <Route path="/alltickets" element={<AllTickets />} />
-
+              <Route path="/email-logs" element={<EmailLogs />} />
           </Route>
 
           {/* --- Student Pages--- */}

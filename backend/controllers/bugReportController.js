@@ -10,6 +10,17 @@ const reporterInclude = {
 };
 const AUTO_CLOSE_DELAY_MS = 24 * 60 * 60 * 1000;
 
+const withPriority = (row) => {
+  const plain = row?.toJSON ? row.toJSON() : row;
+  if (!plain) return plain;
+  return {
+    ...plain,
+    priority: plain.severity
+      ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
+      : null,
+  };
+};
+
 const shouldAutoClose = (row) => {
   if (!row || row.status !== "resolved") return false;
   const resolvedAt = new Date(row.updatedAt);
@@ -122,24 +133,6 @@ exports.list = async (req, res) => {
       ].filter(Boolean);
     }
 
-<<<<<<< HEAD
-    const rows = await BugReport.findAll({
-      where,
-      order: [["createdAt", "DESC"]],
-    });
-
-    const data = rows.map((row) => {
-      const plain = row.toJSON ? row.toJSON() : row;
-      return {
-        ...plain,
-        priority: plain.severity
-          ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
-          : null,
-      };
-    });
-
-    return res.json({ ok: true, data });
-=======
     const rows = await BugReport.findAll({
       where,
       include: [reporterInclude],
@@ -147,8 +140,7 @@ exports.list = async (req, res) => {
     });
     await autoCloseBugReports(rows);
 
-    return res.json({ ok: true, data: rows });
->>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
+    return res.json({ ok: true, data: rows.map(withPriority) });
   } catch (e) {
     console.error("[bugReportController.list]", e);
     return res.status(500).json({ ok: false, error: "Internal error" });
@@ -162,26 +154,11 @@ exports.getOne = async (req, res) => {
       return res.status(400).json({ ok: false, error: "Invalid id" });
     }
 
-<<<<<<< HEAD
-    const row = await BugReport.findByPk(id);
-    if (!row) return res.status(404).json({ ok: false, error: "Not found" });
-
-    const plain = row.toJSON ? row.toJSON() : row;
-    const data = {
-      ...plain,
-      priority: plain.severity
-        ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
-        : null,
-    };
-
-    return res.json({ ok: true, data });
-=======
     const row = await BugReport.findByPk(id, { include: [reporterInclude] });
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
     await autoCloseBugReport(row);
 
-    return res.json({ ok: true, data: row });
->>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
+    return res.json({ ok: true, data: withPriority(row) });
   } catch (e) {
     console.error("[bugReportController.getOne]", e);
     return res.status(500).json({ ok: false, error: "Internal error" });
@@ -206,9 +183,16 @@ exports.update = async (req, res) => {
         .json({ ok: false, errors: error.details.map((d) => d.message) });
     }
 
-<<<<<<< HEAD
     const row = await BugReport.findByPk(id);
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
+    await autoCloseBugReport(row);
+
+    if (row.status === "closed") {
+      return res.status(400).json({
+        ok: false,
+        error: "Closed bug reports cannot be edited.",
+      });
+    }
 
     const updates = {};
 
@@ -235,38 +219,8 @@ exports.update = async (req, res) => {
     }
 
     await row.update(updates);
-
-    const plain = row.toJSON ? row.toJSON() : row;
-    const data = {
-      ...plain,
-      priority: plain.severity
-        ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
-        : null,
-    };
-
-    return res.json({ ok: true, data });
-=======
-    const row = await BugReport.findByPk(id);
-    if (!row) return res.status(404).json({ ok: false, error: "Not found" });
-    await autoCloseBugReport(row);
-
-    if (row.status === "closed") {
-      return res.status(400).json({
-        ok: false,
-        error: "Closed bug reports cannot be edited.",
-      });
-    }
-
-    const updates = {};
-    for (const k of Object.keys(value)) {
-      if (hasAttr(k)) updates[k] = value[k];
-    }
-    if (Object.keys(updates).length === 0) return res.status(400).json({ ok: false, error: "No valid fields to update" });
-
-    await row.update(updates);
     const updatedRow = await BugReport.findByPk(id, { include: [reporterInclude] });
-    return res.json({ ok: true, data: updatedRow });
->>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
+    return res.json({ ok: true, data: withPriority(updatedRow) });
   } catch (e) {
     console.error("[bugReportController.update]", e);
     return res.status(500).json({ ok: false, error: "Internal error" });
