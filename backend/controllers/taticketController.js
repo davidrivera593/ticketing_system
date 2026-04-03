@@ -1,6 +1,7 @@
 const TaTicket = require("../models/TaTicket");
 const User = require("../models/User");
 const Communication = require("../models/Communication");
+const TaCommunication = require("../models/TaCommunication");
 const TaTicketAssignment = require("../models/TaTicketAssignment");
 const {
     notifyTaTicketStatusChanged,
@@ -182,9 +183,6 @@ exports.getTicketsByUserId = async (req, res) => {
     }
 };
 
-
-
-
 exports.getTicketsByTAId = async (req, res) => {
     try {
         const tickets = await TaTicket.findAll({ where: { assigned_to: req.params.ta_id } });
@@ -212,6 +210,63 @@ exports.getTicketById = async (req, res) => {
             res.status(404).json({ error: "Ticket not found" });
         }
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getTicketResponseTime = async (req, res) => {
+    try {
+        const ticketId = req.params.ticket_id;
+
+        const ticket = await TaTicket.findByPk(ticketId);
+
+        if (!ticket) {
+            return res.status(404).json({ error: "Ticket not found" });
+        }
+
+        const communications = await TaCommunication.findAll({
+            where: { ticket_id: ticketId },
+            include: [
+                {
+                    model: User,
+                    attributes: ["name", "role"],
+                },
+            ],
+            order: [["created_at", "ASC"]],
+        });
+
+        const firstResponse = communications.find((comm) =>
+            comm.User && ["TA", "admin", "grader"].includes(comm.User.role)
+        );
+
+        if (!firstResponse) {
+            return res.json({
+                ticket_id: ticketId,
+                response_time_minutes: null,
+                response_time_formatted: "No response yet",
+            });
+        }
+
+        const createdAt = new Date(ticket.created_at);
+        const responseAt = new Date(firstResponse.created_at);
+
+        const diffMs = responseAt - createdAt;
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+
+        res.json({
+            ticket_id: ticketId,
+            ticket_created_at: ticket.created_at,
+            first_response_at: firstResponse.created_at,
+            responder_name: firstResponse.User?.name,
+            responder_role: firstResponse.User?.role,
+            response_time_minutes: diffMinutes,
+            response_time_formatted: `${hours}h ${minutes}m`,
+        });
+    } catch (error) {
+        console.error("Error calculating response time:", error);
         res.status(500).json({ error: error.message });
     }
 };

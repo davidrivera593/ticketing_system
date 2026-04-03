@@ -22,6 +22,11 @@ router.get( //depricated
     ticketController.getTicketsByTAId
 );
 router.get(
+    "/:ticket_id/response-time",
+    authMiddleware.verifyToken,
+    ticketController.getTicketResponseTime
+);
+router.get(
     "/:ticket_id",
     authMiddleware.verifyToken,
     ticketController.getTicketById

@@ -26,30 +26,62 @@ const autoCloseBugReport = async (row) => {
 const autoCloseBugReports = async (rows) =>
   Promise.all(rows.map(async (row) => autoCloseBugReport(row)));
 
+const normalizePriorityToSeverity = (value) => {
+  if (!value) return value;
+  const map = {
+    Low: "low",
+    Medium: "medium",
+    High: "high",
+    low: "low",
+    medium: "medium",
+    high: "high",
+    critical: "critical",
+    Critical: "critical",
+  };
+  return map[value] || value.toLowerCase();
+};
+
 const createSchema = Joi.object({
   subject: Joi.string().trim().max(255).required(),
   description: Joi.string().trim().max(10000).required(),
+  priority: Joi.string().valid("Low", "Medium", "High").optional(),
   severity: Joi.string().valid("low", "medium", "high", "critical").optional(),
 }).unknown(false);
 
 const updateSchema = Joi.object({
   subject: Joi.string().trim().max(255),
   description: Joi.string().trim().max(10000),
+  priority: Joi.string().valid("Low", "Medium", "High"),
   severity: Joi.string().valid("low", "medium", "high", "critical"),
-  status: Joi.string().valid("open", "triaged", "in_progress", "resolved"),
+  status: Joi.string().valid("open", "triaged", "in_progress", "resolved", "closed"),
 }).min(1).unknown(false);
+
 
 exports.create = async (req, res) => {
   try {
-    const { value, error } = createSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
-    if (error) return res.status(400).json({ ok: false, errors: error.details.map((d) => d.message) });
+    const { value, error } = createSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      return res
+        .status(400)
+        .json({ ok: false, errors: error.details.map((d) => d.message) });
+    }
 
     const payload = {
       subject: value.subject,
       description: value.description,
     };
 
-    if (hasAttr("severity") && value.severity) payload.severity = value.severity;
+    const normalizedSeverity =
+      value.priority ? normalizePriorityToSeverity(value.priority) : value.severity;
+
+    if (hasAttr("severity") && normalizedSeverity) {
+      payload.severity = normalizedSeverity;
+    }
+
     if (hasAttr("status")) payload.status = "open";
 
     const uid = req.user?.user_id ?? req.user?.id ?? null;
@@ -70,15 +102,44 @@ exports.create = async (req, res) => {
 exports.list = async (req, res) => {
   try {
     const where = {};
-    if (req.query.status && hasAttr("status")) where.status = req.query.status;
-    if (req.query.severity && hasAttr("severity")) where.severity = req.query.severity;
+
+    if (req.query.status && hasAttr("status")) {
+      where.status = req.query.status;
+    }
+
+    if (req.query.priority && hasAttr("severity")) {
+      where.severity = normalizePriorityToSeverity(req.query.priority);
+    } else if (req.query.severity && hasAttr("severity")) {
+      where.severity = req.query.severity;
+    }
+
     if (req.query.q && hasAttr("subject")) {
       where[Op.or] = [
         { subject: { [Op.like]: `%${req.query.q}%` } },
-        hasAttr("description") ? { description: { [Op.like]: `%${req.query.q}%` } } : null,
+        hasAttr("description")
+          ? { description: { [Op.like]: `%${req.query.q}%` } }
+          : null,
       ].filter(Boolean);
     }
 
+<<<<<<< HEAD
+    const rows = await BugReport.findAll({
+      where,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const data = rows.map((row) => {
+      const plain = row.toJSON ? row.toJSON() : row;
+      return {
+        ...plain,
+        priority: plain.severity
+          ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
+          : null,
+      };
+    });
+
+    return res.json({ ok: true, data });
+=======
     const rows = await BugReport.findAll({
       where,
       include: [reporterInclude],
@@ -87,6 +148,7 @@ exports.list = async (req, res) => {
     await autoCloseBugReports(rows);
 
     return res.json({ ok: true, data: rows });
+>>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
   } catch (e) {
     console.error("[bugReportController.list]", e);
     return res.status(500).json({ ok: false, error: "Internal error" });
@@ -96,13 +158,30 @@ exports.list = async (req, res) => {
 exports.getOne = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, error: "Invalid id" });
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid id" });
+    }
 
+<<<<<<< HEAD
+    const row = await BugReport.findByPk(id);
+    if (!row) return res.status(404).json({ ok: false, error: "Not found" });
+
+    const plain = row.toJSON ? row.toJSON() : row;
+    const data = {
+      ...plain,
+      priority: plain.severity
+        ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
+        : null,
+    };
+
+    return res.json({ ok: true, data });
+=======
     const row = await BugReport.findByPk(id, { include: [reporterInclude] });
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
     await autoCloseBugReport(row);
 
     return res.json({ ok: true, data: row });
+>>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
   } catch (e) {
     console.error("[bugReportController.getOne]", e);
     return res.status(500).json({ ok: false, error: "Internal error" });
@@ -112,11 +191,61 @@ exports.getOne = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, error: "Invalid id" });
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid id" });
+    }
 
-    const { value, error } = updateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
-    if (error) return res.status(400).json({ ok: false, errors: error.details.map((d) => d.message) });
+    const { value, error } = updateSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
 
+    if (error) {
+      return res
+        .status(400)
+        .json({ ok: false, errors: error.details.map((d) => d.message) });
+    }
+
+<<<<<<< HEAD
+    const row = await BugReport.findByPk(id);
+    if (!row) return res.status(404).json({ ok: false, error: "Not found" });
+
+    const updates = {};
+
+    if (value.subject !== undefined && hasAttr("subject")) {
+      updates.subject = value.subject;
+    }
+
+    if (value.description !== undefined && hasAttr("description")) {
+      updates.description = value.description;
+    }
+
+    if ((value.priority !== undefined || value.severity !== undefined) && hasAttr("severity")) {
+      updates.severity = value.priority
+        ? normalizePriorityToSeverity(value.priority)
+        : value.severity;
+    }
+
+    if (value.status !== undefined && hasAttr("status")) {
+      updates.status = value.status;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ ok: false, error: "No valid fields to update" });
+    }
+
+    await row.update(updates);
+
+    const plain = row.toJSON ? row.toJSON() : row;
+    const data = {
+      ...plain,
+      priority: plain.severity
+        ? plain.severity.charAt(0).toUpperCase() + plain.severity.slice(1)
+        : null,
+    };
+
+    return res.json({ ok: true, data });
+=======
     const row = await BugReport.findByPk(id);
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
     await autoCloseBugReport(row);
@@ -137,6 +266,7 @@ exports.update = async (req, res) => {
     await row.update(updates);
     const updatedRow = await BugReport.findByPk(id, { include: [reporterInclude] });
     return res.json({ ok: true, data: updatedRow });
+>>>>>>> 966843f086b54e846c585b2842f7605f5231cafb
   } catch (e) {
     console.error("[bugReportController.update]", e);
     return res.status(500).json({ ok: false, error: "Internal error" });
@@ -146,7 +276,9 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, error: "Invalid id" });
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid id" });
+    }
 
     const row = await BugReport.findByPk(id);
     if (!row) return res.status(404).json({ ok: false, error: "Not found" });
