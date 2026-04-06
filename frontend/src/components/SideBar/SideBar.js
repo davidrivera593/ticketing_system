@@ -259,19 +259,21 @@ const SideBar = () => {
           <ListItemText className="fontStyle" primary="All Assignees" />
         </ListItemButton> */}
 
-        <ListItemButton
-          className="buttonStyle"
-          selected={selectedPage === 8}
-          onClick={() => {
-            setSelectedPage(8);
-            navigate("/help/faq");
-          }}
-        >
-          <ListItemIcon>
-            <HelpOutlineIcon className="iconStyle" />
-          </ListItemIcon>
-          <ListItemText className="fontStyle" primary="Help / FAQ" />
-        </ListItemButton>
+        {userType !== "developer" && (
+          <ListItemButton
+            className="buttonStyle"
+            selected={selectedPage === 8}
+            onClick={() => {
+              setSelectedPage(8);
+              navigate("/help/faq");
+            }}
+          >
+            <ListItemIcon>
+              <HelpOutlineIcon className="iconStyle" />
+            </ListItemIcon>
+            <ListItemText className="fontStyle" primary="Help / FAQ" />
+          </ListItemButton>
+        )}
 
         { (userType === "student" || userType === "TA") && (
           <ListItemButton
