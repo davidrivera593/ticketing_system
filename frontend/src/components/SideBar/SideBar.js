@@ -3,6 +3,8 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import LayersIcon from "@mui/icons-material/Layers";
 import ListIcon from "@mui/icons-material/List";
+import MenuIcon from "@mui/icons-material/Menu";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PeopleIcon from "@mui/icons-material/People";
@@ -22,7 +24,7 @@ import CreateTicket from "../CreateTicket/CreateTicket";
 import BugReportIcon from "@mui/icons-material/BugReport";
 import "./SideBar.css";
 
-const SideBar = () => {
+const SideBar = ({isCollapsed = false, onToggle = () => {}}) => {
   const [selectedPage, setSelectedPage] = React.useState(0);
   const [showModal, setShowModal] = useState(false);
   let navigate = useNavigate();
@@ -81,13 +83,27 @@ const SideBar = () => {
     <Drawer
       variant="permanent"
       anchor="left"
-      className="sideBar"
+      className={`sideBar ${isCollapsed ? "collapsed" : ""}`}
       classes={{
-        paper: "sidebar-paper",
+        paper: `sidebar-paper ${isCollapsed ? "sidebar-paper-collapsed" : ""}`,
       }}
     >
-      <img src={ASULogo} alt="Logo" />
+      <img src={ASULogo} alt="Logo" className="sidebar-logo"/>
       <List className="ticketsNavigation">
+        <ListItemButton
+          className="buttonStyle"
+          onClick={onToggle}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ListItemIcon>
+            {isCollapsed ? (
+              <MenuIcon className="iconStyle" />
+            ) : (
+              <MenuOpenIcon className="iconStyle" />
+            )}
+          </ListItemIcon>
+          <ListItemText className="fontStyle" primary={isCollapsed ? "Expand" : "Collapse"} />
+        </ListItemButton>
         <ListItemButton
           className="buttonStyle"
           selected={selectedPage === 0}

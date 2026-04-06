@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -12,30 +13,63 @@ import {
 import BugReportIcon from "@mui/icons-material/BugReport";
 
 export default function BugReportPage() {
-  const [form, setForm] = useState({ subject: "", description: "" });
+  const [form, setForm] = useState({
+    subject: "",
+    description: "",
+    priority: "Medium",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const onChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setResult(null);
+
     try {
       const token = Cookies.get("token");
       if (!token) throw new Error("No token found. Please log in again.");
-      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || ""}/api/bug-reports`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify(form),
+
+      const payload = {
+        subject: form.subject,
+        description: form.description,
+        severity: form.priority.toLowerCase(),
+      };
+
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || ""}/api/bug-reports`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data?.errors?.join(", ") || data?.error || `Submit failed: ${res.status}`
+        );
+      }
+
+      setResult({
+        type: "success",
+        msg: "Thanks! Your bug report was submitted.",
       });
-      if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
-      setResult({ type: "success", msg: "Thanks! Your bug report was submitted." });
-      setForm({ subject: "", description: "" });
+
+      setForm({
+        subject: "",
+        description: "",
+        priority: "Medium",
+      });
     } catch (err) {
       setResult({ type: "error", msg: err.message });
     } finally {
@@ -43,8 +77,7 @@ export default function BugReportPage() {
     }
   };
 
-
-return (
+  return (
     <Box
       minHeight="100vh"
       display="flex"
@@ -82,6 +115,7 @@ return (
             >
               <BugReportIcon fontSize="large" />
             </Box>
+
             <Box>
               <Typography variant="overline" color="text.secondary">
                 Help Us Improve
@@ -90,7 +124,8 @@ return (
                 Report a Bug
               </Typography>
               <Typography color="text.secondary">
-                Share what went wrong and our engineers will jump on it as soon as possible.
+                Share what went wrong and our engineers will jump on it as soon
+                as possible.
               </Typography>
             </Box>
           </Stack>
@@ -111,6 +146,7 @@ return (
               placeholder="E.g. Unable to upload attachments"
               fullWidth
             />
+
             <TextField
               label="Description"
               name="description"
@@ -122,6 +158,21 @@ return (
               placeholder="Tell us what happened, the steps to reproduce it, and any context that might help."
               fullWidth
             />
+
+            <TextField
+              select
+              label="Priority"
+              name="priority"
+              value={form.priority}
+              onChange={onChange}
+              required
+              fullWidth
+            >
+              <MenuItem value="Low">Low</MenuItem>
+              <MenuItem value="Medium">Medium</MenuItem>
+              <MenuItem value="High">High</MenuItem>
+            </TextField>
+
             <Button
               type="submit"
               variant="contained"
@@ -142,4 +193,3 @@ return (
     </Box>
   );
 }
-

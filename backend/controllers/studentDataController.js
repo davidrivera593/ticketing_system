@@ -15,10 +15,10 @@ exports.getStudentDataByUserId = async (req, res) => {
 
 exports.createStudentData = async (req, res) => {
     try {
-        const {user_id, team_id, section} = req.body;
+       const { user_id, team_id, section, semester } = req.body;
         const [user, created] = await StudentData.findOrCreate({
             where: { user_id },
-            defaults: { user_id, team_id, section }
+            defaults: { user_id, team_id, section, semester }
         });
         
         if (created) return res.status(201).json({ created: true, user });

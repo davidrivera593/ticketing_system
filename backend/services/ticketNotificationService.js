@@ -32,13 +32,13 @@ const getUniqueNotifiableRecipients = (users, actorUserId) => {
   });
 };
 
-const deliverEmails = async (recipients, subject, body) => {
+const deliverEmails = async (recipients, subject, body, options = {}) => {
   if (!recipients.length) {
     return;
   }
 
   const sendResults = await Promise.allSettled(
-    recipients.map((recipient) => sendEmail(recipient.email, subject, body))
+    recipients.map((recipient) => sendEmail(recipient.email, subject, body, options))
   );
 
   sendResults.forEach((result, index) => {
@@ -107,7 +107,7 @@ const notifyRegularTicketStatusChanged = async ({
   const subject = `Ticket #${ticket.ticket_id} status updated`;
   const body = `Ticket #${ticket.ticket_id} status changed from "${previousStatus}" to "${currentStatus}".`;
 
-  await deliverEmails(recipients, subject, body);
+  await deliverEmails(recipients, subject, body, { emailType: "ticket_status_change", ticketId });
 };
 
 const notifyRegularTicketEscalationChanged = async ({
@@ -140,7 +140,7 @@ const notifyRegularTicketEscalationChanged = async ({
     ? `Ticket #${ticket.ticket_id} was escalated for additional review.`
     : `Ticket #${ticket.ticket_id} was de-escalated.`;
 
-  await deliverEmails(recipients, subject, body);
+  await deliverEmails(recipients, subject, body, { emailType: "ticket_escalation", ticketId });
 };
 
 const notifyTaTicketStatusChanged = async ({
@@ -162,7 +162,7 @@ const notifyTaTicketStatusChanged = async ({
   const subject = `TA Ticket #${ticket.ticket_id} status updated`;
   const body = `TA Ticket #${ticket.ticket_id} status changed from "${previousStatus}" to "${currentStatus}".`;
 
-  await deliverEmails(recipients, subject, body);
+  await deliverEmails(recipients, subject, body, { emailType: "ta_ticket_status_change", ticketId });
 };
 
 const notifyTaTicketEscalationChanged = async ({
@@ -183,7 +183,7 @@ const notifyTaTicketEscalationChanged = async ({
     ? `TA Ticket #${ticket.ticket_id} was escalated for additional review.`
     : `TA Ticket #${ticket.ticket_id} was de-escalated.`;
 
-  await deliverEmails(recipients, subject, body);
+  await deliverEmails(recipients, subject, body, { emailType: "ta_ticket_escalation", ticketId });
 };
 
 module.exports = {

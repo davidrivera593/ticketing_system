@@ -21,6 +21,10 @@ const StudentData = sequelize.define("StudentData", {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    semester: {
+    type: DataTypes.STRING,
+    allowNull: true,
+},
     acct_creation: {
         allowNull: false,
         type: DataTypes.DATE,

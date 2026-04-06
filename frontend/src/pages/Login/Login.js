@@ -124,18 +124,28 @@ export default function SignIn() {
 
             const { token, mustChangePassword } = await response.json();
 
-            Cookies.set("token", token, {
-                secure: true,
-                sameSite: "Strict",
-                expires: rememberMe ? 7 : undefined
-            });
+const isLocalhost = window.location.hostname === "localhost";
 
-            const decoded = jwtDecode(token);
-            const userType = decoded.role;
-            const userId = decoded.id;
-            const userName = decoded.name;
-            Cookies.set("user_id", userId, { secure: true, sameSite: "Strict" });
-            Cookies.set("name", userName, { secure: true, sameSite: "Strict" });
+Cookies.set("token", token, {
+    secure: !isLocalhost,
+    sameSite: "Strict",
+    expires: rememberMe ? 7 : undefined
+});
+
+const decoded = jwtDecode(token);
+const userType = decoded.role;
+const userId = decoded.id;
+const userName = decoded.name;
+
+Cookies.set("user_id", userId, {
+    secure: !isLocalhost,
+    sameSite: "Strict"
+});
+
+Cookies.set("name", userName, {
+    secure: !isLocalhost,
+    sameSite: "Strict"
+});
 
             try {
                 window.dispatchEvent(new CustomEvent('userChanged'));
