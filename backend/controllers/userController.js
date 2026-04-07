@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs"); // Required for password change
 const StudentData = require("../models/StudentData");
 const Team = require("../models/Team");
 const { validatePassword } = require("../utils/passwordValidator");
+const sendEmail = require("../services/emailService");
 // github tracking
 
 const VALID_USER_ROLES = ["student", "TA", "admin", "grader", "developer"];
@@ -294,6 +295,84 @@ exports.changePassword = async (req, res) => {
 
     res.json({ message: "Password updated successfully" });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.emailNotification = async (req, res) => {
+  try {
+    const { name, email, role, password} = req.body;
+
+    if (!name || !email || !role || !password) {
+    // if (!name || !email || !role) {
+      return res.status(400).json({ error: "Name, email, role, and password are required" });
+    }
+
+    if (!VALID_USER_ROLES.includes(role)) {
+      return res.status(400).json({ error: "Invalid role specified" });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    // console.log('User stuff: ', user.password);
+    
+
+    //Should be fine to ignore password policy if it's random and temp
+    let hashedPassword = password;
+    hashedPassword = await bcrypt.hash(password, 10);
+    
+    try {
+      await user.update({ 
+        password: hashedPassword,
+        must_change_password: true // Force password change on first login
+      });
+      console.log(`Password updated for user: ${email}`);
+    } catch (updateError) {
+      console.error(`Failed to update password for ${email}:`, updateError);
+      return res.status(500).json({ error: "Failed to update user password." });
+    }
+
+    try {
+      const subject = "Welcome to the ASU Capstone Help Desk System";
+      const emailBody =
+      `
+      Hello ${name},
+
+      Your account has been created for the ASU Capstone Help Desk System.
+
+      Login at: https://helpdesk.asucapstonetools.com/login 
+
+      Email: ${user.email}
+      Password: ${password}
+      Role: ${user.role}
+
+      Please change your password after your first login. Password is generated for one time use.
+
+      If you have any questions or need assistance, please contact your instructor or reach out for assistance
+
+      Best regards,
+      ASU Capstone Help Desk Team`;
+
+      await sendEmail(email, subject, emailBody);
+      console.log("Welcome email sent to", email);
+    } catch (emailError) {
+      console.error(`Failed to send email to ${email}:`, emailError);
+      return res.status(500).json({ error: "Failed to send notification email." });
+    }
+
+    return res.status(200).json({ message: "Welcome email sent.", user });
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const details = (error.errors || []).map(e => ({ path: e.path, message: e.message }));
+      return res.status(409).json({ error: 'Unique constraint', details });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      const details = (error.errors || []).map(e => ({ path: e.path, message: e.message }));
+      return res.status(400).json({ error: 'Validation error', details });
+    }
+
     res.status(500).json({ error: error.message });
   }
 };

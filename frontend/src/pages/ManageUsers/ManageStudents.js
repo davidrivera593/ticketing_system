@@ -25,10 +25,17 @@ import {
     alpha,
     TextField,
     InputAdornment,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
+import { generateRandomPassword } from "../../services/generateRandomPass";
+
 
 const ManageStudents = () => {
     // Master list of all students from API
@@ -41,6 +48,9 @@ const ManageStudents = () => {
     // State for selection and action menu
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+    const [confirmNotifyOpen, setConfirmNotifyOpen] = useState(false);
+    const [isSendingNotify, setIsSendingNotify] = useState(false);
+    const [notifySent, setNotifySent] = useState(false);
 
     // Add new state for search query
     const [searchQuery, setSearchQuery] = useState("");
@@ -212,6 +222,65 @@ const ManageStudents = () => {
         setMenuAnchorEl(null);
     };
 
+    const handleConfirmNotify = async () => {
+        setIsSendingNotify(true);
+        await handleNotifySelected();
+        setIsSendingNotify(false);
+        setNotifySent(true);
+    };
+
+    const handleCloseNotifyDialog = () => {
+        setConfirmNotifyOpen(false);
+        if (notifySent) {
+            setSelectedStudents([]);
+            setNotifySent(false);
+        }
+        setIsSendingNotify(false);
+    };
+
+    const handleCancelNotify = () => {
+        if (!isSendingNotify) {
+            setConfirmNotifyOpen(false);
+        }
+    };
+
+    const handleNotifySelected = async () => {
+        const selectedStudentData = students.filter(s => selectedStudents.includes(s.user_id));
+
+        for (const student of selectedStudentData) {
+            const { email } = student;
+            console.log("Sending to", student);
+            try {
+                //Ideally you send the one that's already in there, but I can't figure out how to get that
+                const randomPass = generateRandomPassword(); 
+                // console.log("Generated password:", randomPass);
+
+                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/email-notification`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        name: student.name,
+                        email: student.email,
+                        password: randomPass,
+                        role: "student",
+                    }),
+                });
+
+                if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || "Failed to send welcome email");
+                }
+
+                console.log("Notification sent to", student.email);
+            } catch (error) {
+                console.error(`Failed to send notification to ${email}:`, error);
+            }
+        }
+    };
+
     // Bulk action logic
     const handleMenuAction = async (action) => {
         handleMenuClose(); // Close the menu
@@ -224,6 +293,10 @@ const ManageStudents = () => {
         } else if (action === 'assign_team') {
             alert(`Assigning team for ${selectedStudents.length} students.`);
             setSelectedStudents([]); // Clear selection
+            return; // Stop here for other actions
+        } else if (action === 'notify') {
+            setConfirmNotifyOpen(true);
+            setMenuAnchorEl(null);
             return; // Stop here for other actions
         } else {
             return; // Unknown action
@@ -409,9 +482,51 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('enable')}>Enable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('disable')}>Disable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
+                            <MenuItem onClick={() => handleMenuAction('notify')}>Notify Selected</MenuItem>
                         </Menu>
                     </Toolbar>
                 )}
+
+                <Dialog
+                    open={confirmNotifyOpen}
+                    onClose={handleCancelNotify}
+                    aria-labelledby="notify-confirmation-dialog-title"
+                >
+                    <DialogTitle id="notify-confirmation-dialog-title">
+                        {isSendingNotify ? "Sending..." : notifySent ? "Notifications Sent" : "Confirm Notify"}
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            {isSendingNotify ? (
+                                `Sending message to ${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'}... Please wait.`
+                            ) : notifySent ? (
+                                `Notifications have been sent to ${selectedStudents.length} selected student${selectedStudents.length === 1 ? '' : 's'}.`
+                            ) : (
+                                `You have selected ${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'}. Are you sure you want to notify them?`
+                            )}
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        {!isSendingNotify && !notifySent && (
+                            <>
+                                <Button onClick={handleCancelNotify}>Cancel</Button>
+                                <Button onClick={handleConfirmNotify} variant="contained" color="primary">
+                                    Notify
+                                </Button>
+                            </>
+                        )}
+                        {isSendingNotify && (
+                            <Button disabled variant="contained" color="primary">
+                                Sending...
+                            </Button>
+                        )}
+                        {notifySent && (
+                            <Button onClick={handleCloseNotifyDialog} variant="contained" color="primary">
+                                Close
+                            </Button>
+                        )}
+                    </DialogActions>
+                </Dialog>
 
                 {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', marginY: 5 }}>
