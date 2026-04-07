@@ -16,7 +16,7 @@ async function hashPassword(password) {
   return await bcrypt.hash(password, saltRounds);
 }
 
-faker.seed(123) // so data stays the same even after resetting database
+faker.seed(123); // so data stays the same even after resetting database
 
 // Generate data for Users table
 async function insertUsers() {
@@ -25,17 +25,23 @@ async function insertUsers() {
   const hashedPassword = await hashPassword(defaultPassword);
 
   const userPromises = Array.from({ length: 20 }).map(async (_, i) => {
-    const firstName =  faker.person.firstName();
+    const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const name = firstName + " " + lastName; // Corrected name generation
-    const email = i === 0 ? "admin1@asu.edu" : faker.internet.email({firstName: firstName, lastName: lastName, provider: 'asu.edu'}); // Make the first user a specific admin, the rest will be randomly generated with asu emails
+    const name = firstName + " " + lastName;
+    const email =
+      i === 0
+        ? "admin1@asu.edu"
+        : faker.internet.email({
+            firstName: firstName,
+            lastName: lastName,
+            provider: "asu.edu",
+          });
 
     const role = i === 0 ? "admin" : roles[Math.floor(Math.random() * roles.length)];
 
     return pool.query(
       "INSERT INTO users (name, email, role, password) VALUES ($1, $2, $3, $4)",
-	[name, email, role, hashedPassword]
-      //[name, email, role, hashedPassword, asu_id]
+      [name, email, role, hashedPassword]
     );
   });
 
@@ -50,20 +56,23 @@ async function insertTeams() {
   );
 
   const teamPromises = Array.from({ length: 5 }).map(() => {
-    
-    const instructor_id = instructors.rows[Math.floor(Math.random() * instructors.rows.length)].user_id;
+    const instructor_id =
+      instructors.rows[Math.floor(Math.random() * instructors.rows.length)].user_id;
     const sponsorNames = faker.person.fullName();
-    const sponsorEmail = sponsorNames.replace(/\s+/g, '') + '@gmail.com';
-    
-    const teamName = faker.company.name(); // Updated to faker.company.name()
+    const sponsorEmail = sponsorNames.replace(/\s+/g, "") + "@gmail.com";
+    const teamName = faker.company.name();
 
-    return pool.query("INSERT INTO teams (team_name, instructor_user_id, sponsor_name, sponsor_email) VALUES ($1, $2, $3, $4)", [teamName, instructor_id, sponsorNames, sponsorEmail]);
+    return pool.query(
+      "INSERT INTO teams (team_name, instructor_user_id, sponsor_name, sponsor_email) VALUES ($1, $2, $3, $4)",
+      [teamName, instructor_id, sponsorNames, sponsorEmail]
+    );
   });
 
   await Promise.all(teamPromises);
   console.log("Inserted teams");
 }
 
+// Generate data for StudentData table
 async function insertStudentData() {
   const students = await pool.query(
     "SELECT user_id FROM users WHERE role = 'student'"
@@ -73,10 +82,11 @@ async function insertStudentData() {
   const studentDataPromises = students.rows.map((student) => {
     const team = teams.rows[Math.floor(Math.random() * teams.rows.length)];
     const section = faker.string.numeric(5);
-    
+    const semester = "SPRING26";
+
     return pool.query(
-      "INSERT INTO studentdata (user_id, team_id, section, acct_creation) VALUES ($1, $2, $3, NOW())",
-      [student.user_id, team.team_id, section]
+      "INSERT INTO studentdata (user_id, team_id, section, semester, acct_creation) VALUES ($1, $2, $3, $4, NOW())",
+      [student.user_id, team.team_id, section, semester]
     );
   });
 
@@ -115,9 +125,9 @@ async function insertTickets() {
 
   const ticketPromises = Array.from({ length: 10 }).map(async () => {
     const student = students.rows[Math.floor(Math.random() * students.rows.length)];
-    
-    // Get student's team info and section from studentdata and teams tables
-    const studentInfo = await pool.query(`
+
+    const studentInfo = await pool.query(
+      `
       SELECT 
         sd.team_id,
         sd.section,
@@ -126,20 +136,21 @@ async function insertTickets() {
       FROM studentdata sd
       JOIN teams t ON sd.team_id = t.team_id
       WHERE sd.user_id = $1
-    `, [student.user_id]);
+    `,
+      [student.user_id]
+    );
 
-    // If student has no team data, use defaults
     const studentData = studentInfo.rows[0] || {
       team_id: teams.rows[Math.floor(Math.random() * teams.rows.length)].team_id,
       section: "Default Section",
       team_name: "Default Team",
-      sponsor_name: "Default Sponsor"
+      sponsor_name: "Default Sponsor",
     };
 
     const issueDescription = faker.lorem.sentence();
     const issueType = issueTypes[Math.floor(Math.random() * issueTypes.length)];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
- 
+
     return pool.query(
       "INSERT INTO tickets (student_id, team_id, issue_description, sponsor_name, section, issue_type, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
       [
@@ -158,35 +169,34 @@ async function insertTickets() {
   console.log("Inserted tickets");
 }
 
-// Generate data for TicketAssignments table, including TAs and some students
+// Generate data for TicketAssignments table
 async function insertTicketAssignments() {
   const tas = await pool.query("SELECT user_id FROM users WHERE role = 'TA'");
   const students = await pool.query(
     "SELECT user_id FROM users WHERE role = 'student'"
   );
-  const tickets = await pool.query("SELECT ticket_id FROM tickets");
+  const tickets = await pool.query("SELECT ticket_id, student_id FROM tickets");
 
-  // Combine TAs and a random subset of students for assignment (backup incase TA can't be found from studentdata/team)
   const eligibleUsers = [
     ...tas.rows,
     ...students.rows.slice(0, Math.floor(students.rows.length / 2)),
   ];
 
-  const assignmentPromises = tickets.rows.map( async (ticket) => {
-    //Get the student_id for the ticket
+  const assignmentPromises = tickets.rows.map(async (ticket) => {
     const student_id = ticket.student_id;
 
-    // Find the assigned instructor for the student's team
-    const assigned_instructor = await pool.query(`
+    const assigned_instructor = await pool.query(
+      `
       SELECT 
         t.instructor_user_id
       FROM studentdata sd
       JOIN teams t ON sd.team_id = t.team_id
       WHERE sd.user_id = $1
-    `, [student_id]);
+    `,
+      [student_id]
+    );
 
-    // If no assigned instructor found, pick a random eligible user, else use the assigned instructor
-    const assigned_instructor_id = 
+    const assigned_instructor_id =
       assigned_instructor.rows[0]?.instructor_user_id ||
       eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)].user_id;
 
@@ -206,10 +216,10 @@ async function insertTicketCommunications() {
   const users = await pool.query("SELECT user_id FROM users");
 
   const communicationPromises = Array.from({ length: 30 }).map(() => {
-    const ticket =
-      tickets.rows[Math.floor(Math.random() * tickets.rows.length)];
+    const ticket = tickets.rows[Math.floor(Math.random() * tickets.rows.length)];
     const user = users.rows[Math.floor(Math.random() * users.rows.length)];
     const message = faker.lorem.paragraph();
+
     return pool.query(
       "INSERT INTO ticketcommunications (ticket_id, user_id, message) VALUES ($1, $2, $3)",
       [ticket.ticket_id, user.user_id, message]
@@ -219,6 +229,7 @@ async function insertTicketCommunications() {
   await Promise.all(communicationPromises);
   console.log("Inserted ticket communications");
 }
+
 /*
 async function insertOfficeHours() {
   const users = await pool.query("SELECT user_id FROM users WHERE role = 'TA'");
@@ -232,29 +243,34 @@ async function insertOfficeHours() {
     );
   });
 
-  await Promise.all(communicationPromises);
+  await Promise.all(schedulePromises);
   console.log("Inserted TA office hours");
 }
 */
 
 // Main function to execute all insertions
+async function clearData() {
+  await pool.query(`
+    TRUNCATE TABLE
+      ticketcommunications,
+      ticketassignments,
+      tickets,
+      teammembers,
+      studentdata,
+      teams,
+      users
+    RESTART IDENTITY CASCADE
+  `);
+  console.log("Cleared existing data");
+}
 async function generateData() {
   try {
     await insertUsers();
-
     await insertTeams();
     await insertStudentData();
     await insertTeamMembers();
     await insertTickets();
     await insertTicketAssignments();
-    // await insertTickets();
-    // await insertTicketAssignments();
-    // await insertTickets();
-    // await insertTicketAssignments();
-    // await insertTickets();
-    // await insertTicketAssignments();
-    // await insertTickets();
-    // await insertTicketAssignments();
     await insertTicketCommunications();
 
     console.log("Fake data inserted successfully!");

@@ -34,7 +34,8 @@ exports.requestPasswordReset = async (req, res) => {
             "Help Desk Password Reset (Time critical)",
             `Your password reset link: ${resetLink}\n` +
             `This link will expire in 1 hour. If the reset expired, go to the login page to request another password reset.\n` +
-            devResetLinkLine
+            devResetLinkLine,
+            { emailType: "password_reset" }
         );
         res.status(200).json({ message: "Password reset email sent." });
     

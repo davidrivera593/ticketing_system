@@ -34,7 +34,9 @@ import BulkUpload from "./pages/BulkUpload/BulkUpload";
 import ManageStudents from "./pages/ManageUsers/ManageStudents";
 import ManageTAs from "./pages/ManageUsers/ManageTAs";
 import ManageAdmins from "./pages/ManageUsers/ManageAdmins";
+import ManageTeams from "./pages/ManageUsers/ManageTeams";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
+import BugReportsList from "./pages/BugReportsList";
 import FAQ from "./pages/FAQ/FAQ";
 import ManageGraders from "./pages/ManageUsers/ManageGraders";
 import GraderDash from "./pages/GraderDash/GraderDash";
@@ -42,6 +44,7 @@ import GraderTickets from "./pages/GraderTickets/GraderTickets";
 import GraderSettings from "./pages/Settings/GraderSettings";
 import DeveloperDash from "./pages/DeveloperDash/DeveloperDash";
 import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
+import EmailLogs from "./pages/EmailLogs/EmailLogs";
 
 
 function App() {
@@ -85,17 +88,18 @@ function App() {
         }
       >
           {/* --- Shared Pages--- */}
+
           <Route element={<ProtectedRoute authorizedRoles={["admin", "student", "TA", "grader"]} />}>
-              <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/allassignees" element={<AllAssignees />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/ta-info" element={<TAinfo />} />
-              <Route path="/ticketview" element={<TicketView />} />
-              <Route path="/ticketinfo" element={<TicketInfo />} />
-              <Route path="/instructorprofile" element={<InstructorProfile />} />
-              <Route path="/mytickets" element={<MyTickets />} />
-              <Route path="/bug-report" element={<BugReportPage />} />
-              <Route path="/help/faq" element={<FAQ />} />
+            <Route path="/allassignees" element={<AllAssignees />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/ta-info" element={<TAinfo />} />
+            <Route path="/ticketview" element={<TicketView />} />
+            <Route path="/ticketinfo" element={<TicketInfo />} />
+            <Route path="/instructorprofile" element={<InstructorProfile />} />
+            <Route path="/mytickets" element={<MyTickets />} />
+            <Route path="/bug-report" element={<BugReportPage />} />
+            <Route path="/bug-reports-list" element={<BugReportsList />} />
+            <Route path="/help/faq" element={<FAQ />} />
           </Route>
 
           <Route element={<ProtectedRoute authorizedRoles={["admin", "TA", "grader"]} />}>
@@ -112,10 +116,12 @@ function App() {
               <Route path="/managestudents" element={<ManageStudents />} />
               <Route path="/manageadmins" element={<ManageAdmins />} />
               <Route path="/manageTAs" element={<ManageTAs />} />
+              <Route path="/manageTeams" element={<ManageTeams />} />
               <Route path="/manageGraders" element={<ManageGraders />} />
               <Route path="/bulkupload" element={<BulkUpload />} />
               <Route path="/escalatedtickets" element={<EscalatedTickets />} />
               <Route path="/alltickets" element={<AllTickets />} />
+              <Route path="/email-logs" element={<EmailLogs />} />
           </Route>
 
           {/* --- Student Pages--- */}
