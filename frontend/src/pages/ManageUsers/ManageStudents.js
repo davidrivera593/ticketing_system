@@ -590,6 +590,9 @@ const ManageStudents = () => {
                                     <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
                                         Enabled
                                     </TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
+                                        Sponsor History
+                                    </TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -655,6 +658,19 @@ const ManageStudents = () => {
                                                     color={isEnabled ? "success" : "error"}
                                                     inputProps={{ "aria-label": `toggle ${student.name}` }}
                                                 />
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    disabled={!student.team_id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/team-sponsor-history?team_id=${student.team_id}&team_name=${encodeURIComponent(student.team_name || "")}`);
+                                                    }}
+                                                >
+                                                    Sponsor History
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     );

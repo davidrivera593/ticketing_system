@@ -241,6 +241,14 @@ const ManageTeam = () => {
                                                     size="small"
                                                     variant="outlined"
                                                     sx={{ mr: 1 }}
+                                                    onClick={() => navigate(`/team-sponsor-history?team_id=${team.team_id}&team_name=${encodeURIComponent(team.team_name)}`)}
+                                                >
+                                                    Sponsor History
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ mr: 1 }}
                                                     onClick={() => handleEditClick(team)}
                                                 >
                                                     Edit

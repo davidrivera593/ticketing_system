@@ -17,6 +17,7 @@ import TicketQueue from "./pages/TicketQueue/TicketQueue";
 import Unauthorized from "./pages/Unauthorized/Unauthorized";
 import BugReportPage from "./pages/bugReportPage/bugReportPage";
 import BugReportsList from "./pages/BugReportsList";
+import TeamSponsorHistory from "./pages/ManageUsers/TeamSponsorHistory";
 
 const routes = [
   { path: "/login", element: <Login />, isProtected: false },
@@ -122,6 +123,12 @@ const routes = [
     element: <BugReportsList />,
     isProtected: true,
     roles: ["admin", "student", "TA"],
+  },
+  {
+    path: "/team-sponsor-history",
+    element: <TeamSponsorHistory />,
+    isProtected: true,
+    roles: ["admin", "TA", "grader"],
   },
 ];
 
