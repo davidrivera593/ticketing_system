@@ -9,4 +9,6 @@ router.put("/:user_id", studentDataController.updateStudentData); //use when id 
 
 router.get("/team/:team_id", studentDataController.getStudentsByTeam);
 
+router.get('/user/:user_id/team', studentDataController.getTeamForStudent);
+
 module.exports = router;

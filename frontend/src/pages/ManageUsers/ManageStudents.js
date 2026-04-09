@@ -78,6 +78,10 @@ const ManageStudents = () => {
     const [isAddingStudent, setIsAddingStudent] = useState(false);
     const [successData, setSuccessData] = useState({ isOpen: false, password: "" });
 
+    // --- DELETE STUDENT STATES ---
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const [isLoading, setIsLoading] = useState(true);
     const token = Cookies.get("token");
     const theme = useTheme();
@@ -289,6 +293,41 @@ const ManageStudents = () => {
         }
     };
 
+    const handleDeleteSubmit = async () => {
+        setIsDeleting(true);
+
+        // 1. Fire DELETE requests concurrently
+        const deletePromises = selectedStudents.map(studentId =>
+            fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/${studentId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }).then(res => {
+                if (!res.ok) throw new Error(`Failed to delete ${studentId}`);
+                return studentId;
+            })
+        );
+
+        const results = await Promise.allSettled(deletePromises);
+
+        // 2. Check for failures
+        const failedDeletes = results.filter(result => result.status === "rejected");
+
+        if (failedDeletes.length > 0) {
+            alert(`Error: ${failedDeletes.length} student(s) failed to delete. Please check the server logs.`);
+        }
+
+        // 3. Re-fetch students to update the UI
+        fetchStudents();
+
+        // 4. Cleanup
+        setIsDeleting(false);
+        setIsDeleteDialogOpen(false);
+        setSelectedStudents([]); // Clear checkboxes
+    };
+
     const handleBack = () => {
         navigate(-1);
     };
@@ -454,6 +493,9 @@ const ManageStudents = () => {
         } else if (action === 'edit_section') {
             setStudentsToAssign([...selectedStudents]);
             setIsSectionDialogOpen(true);
+            return;
+        } else if (action === 'delete') {
+            setIsDeleteDialogOpen(true);
             return;
         } else {
             return; // Unknown action
@@ -648,6 +690,12 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('disable')}>Disable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('edit_section')}>Edit Section</MenuItem>
+                            <MenuItem
+                                onClick={() => handleMenuAction('delete')}
+                                sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}
+                            >
+                                Remove Selected
+                            </MenuItem>
                         </Menu>
                     </Toolbar>
                 )}
@@ -1019,6 +1067,41 @@ const ManageStudents = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* --- DELETE STUDENT CONFIRMATION DIALOG --- */}
+            <Dialog
+                open={isDeleteDialogOpen}
+                onClose={() => !isDeleting && setIsDeleteDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}>
+                    Remove Student(s)?
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to permanently remove the <strong>{selectedStudents.length}</strong> selected student(s)? This action cannot be undone and will remove all associated student data.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, pt: 0 }}>
+                    <Button
+                        onClick={() => setIsDeleteDialogOpen(false)}
+                        disabled={isDeleting}
+                        sx={{ color: theme.palette.text.secondary }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleDeleteSubmit}
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? <CircularProgress size={24} color="inherit" /> : "Confirm Removal"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </Box>
     );
 };
