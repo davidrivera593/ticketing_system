@@ -37,6 +37,7 @@ import {
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
+import {generateRandomPassword} from "../../services/generateRandomPass";
 
 const ManageStudents = () => {
     // Master list of all students from API
@@ -64,6 +65,18 @@ const ManageStudents = () => {
     const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
     const [selectedSection, setSelectedSection] = useState("");
     const [isAssigningSection, setIsAssigningSection] = useState(false);
+
+    // --- STUDENT STATES ---
+    const [isAddStudentDialogOpen, setIsAddStudentDialogOpen] = useState(false);
+    const [newStudentData, setNewStudentData] = useState({
+        name: "",
+        email: "",
+        section: "",
+        semester: "",
+        team_id: ""
+    });
+    const [isAddingStudent, setIsAddingStudent] = useState(false);
+    const [successData, setSuccessData] = useState({ isOpen: false, password: "" });
 
     const [isLoading, setIsLoading] = useState(true);
     const token = Cookies.get("token");
@@ -151,6 +164,86 @@ const ManageStudents = () => {
             }
         } catch (error) {
             console.error("Failed to fetch teams:", error);
+        }
+    };
+
+    const handleAddStudentSubmit = async () => {
+        const { name, email, section, semester, team_id } = newStudentData;
+
+        if (!name.trim() || !email.trim()) {
+            alert("Name and Email are required.");
+            return;
+        }
+
+        setIsAddingStudent(true);
+        const password = generateRandomPassword();
+
+        try {
+            // STEP 1: Create user account
+            const responseUser = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/register`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    email: email.trim(),
+                    password: password,
+                    role: "student",
+                    must_change_password: true
+                }),
+            });
+
+            const responseUserData = await responseUser.json();
+
+            if (!responseUser.ok || responseUserData?.created === false || responseUserData.status === 409) {
+                throw new Error(`Failed to create user: ${responseUserData?.message || responseUserData?.error || "Unknown error"}`);
+            }
+
+            const { user_id } = responseUserData.user;
+
+            // STEP 2: Create student data
+            const responseSD = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/studentdata/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    user_id: user_id,
+                    team_id: team_id || null, // Optional if no team is selected
+                    section: section.trim() || null,
+                    semester: semester.trim() || null,
+                }),
+            });
+
+            if (!responseSD.ok) {
+                const errorData = await responseSD.json();
+                throw new Error(`User created, but failed to create Student Data: ${errorData.message}`);
+            }
+
+            // Optional STEP 3: If you need to add to a separate 'teammembers' table like in your createStudent snippet
+            if (team_id) {
+                await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/teammembers`, { // Adjust URL to your actual endpoint
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ team_id: team_id, user_id: user_id })
+                });
+            }
+
+            // SUCCESS: Refresh the list and close dialog
+            fetchStudents();
+            setIsAddStudentDialogOpen(false);
+            setNewStudentData({ name: "", email: "", section: "", semester:"", team_id: "" });
+
+            // Optional: alert the admin of the generated password or rely on email
+            setSuccessData({ isOpen: true, password: password });
+        } catch (error) {
+            console.error("Add student error:", error);
+            alert(error.message);
+        } finally {
+            setIsAddingStudent(false);
         }
     };
 
@@ -476,13 +569,14 @@ const ManageStudents = () => {
                 </Box>
 
                 {/* --- SEARCH BAR --- */}
-                <Box sx={{ mb: 2, width: '100%' }}>
+                {/* --- TOOLBAR (Search & Actions) --- */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, gap: 2 }}>
                     <TextField
-                        fullWidth
                         variant="outlined"
-                        placeholder="Search by name, email, team, sponsor, semester, or section..."
+                        placeholder="Search by name, email, team, sponsor, or section..."
                         value={searchQuery}
                         onChange={handleSearchChange}
+                        sx={{ width: '100%', maxWidth: '400px' }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -491,6 +585,13 @@ const ManageStudents = () => {
                             ),
                         }}
                     />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setIsAddStudentDialogOpen(true)}
+                    >
+                        + Add Student
+                    </Button>
                 </Box>
                 {/* --- END OF SEARCH BAR --- */}
 
@@ -762,6 +863,159 @@ const ManageStudents = () => {
                         disabled={!selectedSection.trim() || isAssigningSection}
                     >
                         {isAssigningSection ? <CircularProgress size={24} color="inherit" /> : "Save Section"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* --- STUDENT DIALOG --- */}
+            <Dialog
+                open={isAddStudentDialogOpen}
+                onClose={() => !isAddingStudent && setIsAddStudentDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Add New Student</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Create a new student account. A temporary password will be auto-generated.
+                    </DialogContentText>
+
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Full Name *"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={newStudentData.name}
+                        onChange={(e) => setNewStudentData({ ...newStudentData, name: e.target.value })}
+                        disabled={isAddingStudent}
+                        sx={{ mb: 2 }}
+                    />
+
+                    <TextField
+                        margin="dense"
+                        label="Email Address *"
+                        type="email"
+                        fullWidth
+                        variant="outlined"
+                        value={newStudentData.email}
+                        onChange={(e) => setNewStudentData({ ...newStudentData, email: e.target.value })}
+                        disabled={isAddingStudent}
+                        sx={{ mb: 2 }}
+                    />
+
+                    <TextField
+                        margin="dense"
+                        label="Section Number"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={newStudentData.section}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^[0-9]+$/.test(val)) {
+                                setNewStudentData({ ...newStudentData, section: val });
+                            }
+                        }}
+                        disabled={isAddingStudent}
+                        slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' } }}
+                        sx={{ mb: 2 }}
+                    />
+
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Semester"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={newStudentData.semester}
+                        onChange={(e) => setNewStudentData({ ...newStudentData, semester: e.target.value })}
+                        disabled={isAddingStudent}
+                        sx={{ mb: 2 }}
+                    />
+
+                    <FormControl fullWidth sx={{ mt: 1 }}>
+                        <InputLabel id="add-student-team-label">Assign Team (Optional)</InputLabel>
+                        <Select
+                            labelId="add-student-team-label"
+                            value={newStudentData.team_id}
+                            label="Assign Team (Optional)"
+                            onChange={(e) => setNewStudentData({ ...newStudentData, team_id: e.target.value })}
+                            disabled={isAddingStudent}
+                        >
+                            <MenuItem value="">
+                                <em>None</em>
+                            </MenuItem>
+                            {teams.map((team) => (
+                                <MenuItem key={team.team_id} value={team.team_id}>
+                                    {team.team_name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, pt: 0 }}>
+                    <Button
+                        onClick={() => setIsAddStudentDialogOpen(false)}
+                        disabled={isAddingStudent}
+                        sx={{ color: theme.palette.text.secondary }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleAddStudentSubmit}
+                        disabled={!newStudentData.name.trim() || !newStudentData.email.trim() || isAddingStudent}
+                    >
+                        {isAddingStudent ? <CircularProgress size={24} color="inherit" /> : "Create Student"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* --- SUCCESS DIALOG (Shows Generated Password) --- */}
+            <Dialog
+                open={successData.isOpen}
+                onClose={() => setSuccessData({ isOpen: false, password: "" })}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle sx={{ color: theme.palette.success.main, fontWeight: "bold" }}>
+                    Student Added Successfully!
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        The student account has been created. Please share this temporary password with the student:
+                    </DialogContentText>
+
+                    <Box
+                        sx={{
+                            mt: 3,
+                            mb: 1,
+                            p: 2,
+                            backgroundColor: theme.palette.action.hover,
+                            borderRadius: 1,
+                            textAlign: 'center',
+                            border: `1px dashed ${theme.palette.divider}`
+                        }}
+                    >
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            Temporary Password
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 2 }}>
+                            {successData.password}
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, pt: 0 }}>
+                    <Button
+                        onClick={() => setSuccessData({ isOpen: false, password: "" })}
+                        variant="contained"
+                        color="success"
+                        fullWidth
+                    >
+                        Got it
                     </Button>
                 </DialogActions>
             </Dialog>
