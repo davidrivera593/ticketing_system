@@ -50,6 +50,9 @@ const ManageStudents = () => {
     // State for selection and action menu
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+    const [confirmNotifyOpen, setConfirmNotifyOpen] = useState(false);
+    const [isSendingNotify, setIsSendingNotify] = useState(false);
+    const [notifySent, setNotifySent] = useState(false);
 
     // Add new state for search query
     const [searchQuery, setSearchQuery] = useState("");
@@ -476,6 +479,65 @@ const ManageStudents = () => {
         setSelectedSection(""); // Reset input
     };
 
+    const handleConfirmNotify = async () => {
+        setIsSendingNotify(true);
+        await handleNotifySelected();
+        setIsSendingNotify(false);
+        setNotifySent(true);
+    };
+
+    const handleCloseNotifyDialog = () => {
+        setConfirmNotifyOpen(false);
+        if (notifySent) {
+            setSelectedStudents([]);
+            setNotifySent(false);
+        }
+        setIsSendingNotify(false);
+    };
+
+    const handleCancelNotify = () => {
+        if (!isSendingNotify) {
+            setConfirmNotifyOpen(false);
+        }
+    };
+
+    const handleNotifySelected = async () => {
+        const selectedStudentData = students.filter(s => selectedStudents.includes(s.user_id));
+
+        for (const student of selectedStudentData) {
+            const { email } = student;
+            console.log("Sending to", student);
+            try {
+                //Ideally you send the one that's already in there, but I can't figure out how to get that
+                const randomPass = generateRandomPassword();
+                // console.log("Generated password:", randomPass);
+
+                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/email-notification`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        name: student.name,
+                        email: student.email,
+                        password: randomPass,
+                        role: "student",
+                    }),
+                });
+
+                if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || "Failed to send welcome email");
+                }
+
+                console.log("Notification sent to", student.email);
+            } catch (error) {
+                console.error(`Failed to send notification to ${email}:`, error);
+            }
+        }
+    };
+
     // Bulk action logic
     const handleMenuAction = async (action) => {
         handleMenuClose(); // Close the menu
@@ -494,6 +556,10 @@ const ManageStudents = () => {
             setStudentsToAssign([...selectedStudents]);
             setIsSectionDialogOpen(true);
             return;
+        } else if (action === 'notify') {
+            setConfirmNotifyOpen(true);
+            setMenuAnchorEl(null);
+            return; // Stop here for other actions
         } else if (action === 'delete') { //delete students
             setIsDeleteDialogOpen(true);
             return;
@@ -690,6 +756,7 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('disable')}>Disable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('edit_section')}>Edit Section</MenuItem>
+                            <MenuItem onClick={() => handleMenuAction('notify')}>Notify Selected</MenuItem>
                             <MenuItem
                                 onClick={() => handleMenuAction('delete')} // delete button action
                                 sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}
@@ -699,6 +766,47 @@ const ManageStudents = () => {
                         </Menu>
                     </Toolbar>
                 )}
+
+                <Dialog
+                    open={confirmNotifyOpen}
+                    onClose={handleCancelNotify}
+                    aria-labelledby="notify-confirmation-dialog-title"
+                >
+                    <DialogTitle id="notify-confirmation-dialog-title">
+                        {isSendingNotify ? "Sending..." : notifySent ? "Notifications Sent" : "Confirm Notify"}
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            {isSendingNotify ? (
+                                `Sending message to ${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'}... Please wait.`
+                            ) : notifySent ? (
+                                `Notifications have been sent to ${selectedStudents.length} selected student${selectedStudents.length === 1 ? '' : 's'}.`
+                            ) : (
+                                `You have selected ${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'}. Are you sure you want to notify them?`
+                            )}
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        {!isSendingNotify && !notifySent && (
+                            <>
+                                <Button onClick={handleCancelNotify}>Cancel</Button>
+                                <Button onClick={handleConfirmNotify} variant="contained" color="primary">
+                                    Notify
+                                </Button>
+                            </>
+                        )}
+                        {isSendingNotify && (
+                            <Button disabled variant="contained" color="primary">
+                                Sending...
+                            </Button>
+                        )}
+                        {notifySent && (
+                            <Button onClick={handleCloseNotifyDialog} variant="contained" color="primary">
+                                Close
+                            </Button>
+                        )}
+                    </DialogActions>
+                </Dialog>
 
                 {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', marginY: 5 }}>
@@ -738,6 +846,9 @@ const ManageStudents = () => {
                                     </TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
                                         Enabled
+                                    </TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: "bold", color: theme.palette.text.primary, backgroundColor: theme.palette.background.paper }}>
+                                        Sponsor History
                                     </TableCell>
                                 </TableRow>
                             </TableHead>
@@ -804,6 +915,19 @@ const ManageStudents = () => {
                                                     color={isEnabled ? "success" : "error"}
                                                     inputProps={{ "aria-label": `toggle ${student.name}` }}
                                                 />
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    disabled={!student.team_id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/team-sponsor-history?team_id=${student.team_id}&team_name=${encodeURIComponent(student.team_name || "")}`);
+                                                    }}
+                                                >
+                                                    Sponsor History
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     );

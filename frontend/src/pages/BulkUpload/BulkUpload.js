@@ -1,5 +1,9 @@
 import React, {useState } from "react";
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import { useDropzone } from "react-dropzone";
 import DownloadTemplate from "../../services/bulkUploadServices/downloadTemplate";
 import Stack from "@mui/material/Stack";
@@ -8,6 +12,9 @@ import {
     Typography,
     Box,
     IconButton,
+    LinearProgress,
+    CircularProgress,
+    Alert,
 } from "@mui/material";
 import { verifyFileService } from "../../services/bulkUploadServices/verifyFile";
 import { generateTAs } from "../../services/bulkUploadServices/createTaUsers";
@@ -21,8 +28,57 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 const BulkUpload = () => {
     const [studentFile, setStudentFile] = useState(null);
     const [projectFile, setProjectFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadStep, setUploadStep] = useState("idle");
+    const [failedStep, setFailedStep] = useState(null);
+    const [uploadMessage, setUploadMessage] = useState("");
+    const [overallProgress, setOverallProgress] = useState(0);
+    const [errorDetails, setErrorDetails] = useState([]);
+    
     const navigate = useNavigate();
     const theme = useTheme();
+
+    const UPLOAD_STEPS = [
+        { key: "validating-project", label: "Validate project file" },
+        { key: "creating-tas", label: "Create TA accounts" },
+        { key: "creating-teams", label: "Create teams" },
+        { key: "validating-students", label: "Validate student file" },
+        { key: "creating-students", label: "Create student accounts + memberships" },
+        { key: "creating-graders", label: "Create grader accounts" },
+    ];
+
+    const getStepIndex = (key) => UPLOAD_STEPS.findIndex((s) => s.key === key);
+
+    const getStepStatus = (stepKey) => {
+        const current = getStepIndex(uploadStep);
+        const target = getStepIndex(stepKey);
+
+        if (failedStep) {
+            const failedIndex = getStepIndex(failedStep);
+            if (target < failedIndex) return "completed";
+            if (target === failedIndex) return "error";
+            return "pending";
+        }
+
+        if (uploadStep === "done") return "done";
+        if (uploadStep === "idle") return "pending";
+        if (target < current) return "completed";
+        if (target === current) return "active";
+        return "pending";
+    };
+
+    const getStepIcon = (status) => {
+        if (status === "completed" || status === "done") {
+            return <CheckCircleIcon fontSize="small" sx={{ color: "success.main" }} />;
+        }
+        if (status === "active") {
+            return <HourglassTopIcon fontSize="small" sx={{ color: "warning.main" }} />;
+        }
+        if (status === "error") {
+            return <ErrorIcon fontSize="small" sx={{ color: "error.main" }} />;
+        }
+        return <RadioButtonUncheckedIcon fontSize="small" sx={{ color: "text.disabled" }} />;
+    };
 
     const handleBack = () => {
         navigate(-1); 
@@ -38,6 +94,7 @@ const BulkUpload = () => {
 
     const studentDrop = useDropzone({
         onDrop: onDropStudent,
+        disabled: isUploading,
         accept: {
         "text/csv": [".csv"],
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
@@ -48,6 +105,7 @@ const BulkUpload = () => {
 
     const instructorDrop = useDropzone({
         onDrop: onDropInstructor,
+        disabled: isUploading,
         accept: {
         "text/csv": [".csv"],
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
@@ -63,54 +121,100 @@ const BulkUpload = () => {
         }
         
         try {
+            setIsUploading(true);
+            setErrorDetails([]);
+            setFailedStep(null);
+            setUploadStep("validating-project");
+            setUploadMessage("Validating project file...");
+            setOverallProgress(5);
+
             const verifyProjectResult = await verifyFileService(projectFile, "project");
             if (!verifyProjectResult.valid) {
                 console.error("Project file verification failed:", verifyProjectResult.errors);
-                alert("Project file validation errors:\n" + verifyProjectResult.errors.join("\n"));
+                setFailedStep("validating-project");
+                setUploadStep("error");
+                setErrorDetails(verifyProjectResult.errors);
                 return;
             }
+
+            setUploadStep("creating-tas");
+            setUploadMessage("Creating TA accounts...");
+            setOverallProgress(20);
 
             const genTaResult = await generateTAs(projectFile);
             if (!genTaResult.valid) {
                 console.error("TA creation failed:", genTaResult.errors);
-                alert("TA creation errors:\n" + genTaResult.errors.join("\n"));
+                setFailedStep("creating-tas");
+                setUploadStep("error");
+                setErrorDetails(genTaResult.errors);
                 return;
             }
+
+            setUploadStep("creating-teams");
+            setUploadMessage("Creating teams...");
+            setOverallProgress(40);
             
             const genTeamResult = await generateTeams(projectFile);
             if (!genTeamResult.valid) {
                 console.error("Team creation failed:", genTeamResult.errors);
-                alert("Team creation errors:\n" + genTeamResult.errors.join("\n"));
+                setFailedStep("creating-teams");
+                setUploadStep("error");
+                setErrorDetails(genTeamResult.errors);
                 return;
             }
+
+            setUploadStep("validating-students");
+            setUploadMessage("Validating student file...");
+            setOverallProgress(55);
 
             const verifyStudentResult = await verifyFileService(studentFile, "student");
             if (!verifyStudentResult.valid) {
                 console.error("Student file verification failed:", verifyStudentResult.errors);
-                alert("Student file validation errors:\n" + verifyStudentResult.errors.join("\n"));
+                setFailedStep("validating-students");
+                setUploadStep("error");
+                setErrorDetails(verifyStudentResult.errors);
                 return;
             }
+
+            setUploadStep("creating-students");
+            setUploadMessage("Creating student accounts and team mappings...");
+            setOverallProgress(70);
     
             const genStudentResult = await generateStudentUsers(studentFile);
             if (!genStudentResult.valid) {
                 console.error("User creation failed:", genStudentResult.errors);
-                alert("Student user creation errors:\n" + genStudentResult.errors.join("\n"));
+                setFailedStep("creating-students");
+                setUploadStep("error");
+                setErrorDetails(genStudentResult.errors);
                 return;
             }
+
+            setUploadStep("creating-graders");
+            setUploadMessage("Creating grader accounts...");
+            setOverallProgress(90);
+
             const genGraderResult = await generateGraders(projectFile);
             if (!genGraderResult.valid) {
                 console.error("Grader creation failed:", genGraderResult.errors);
-                alert("Grader creation errors:\n" + genGraderResult.errors.join("\n"));
+                setFailedStep("creating-graders");
+                setUploadStep("error");
+                setErrorDetails(genGraderResult.errors);
                 return;
             }
             
-            
-            alert("Files processed successfully.");
-            setStudentFile(null);
-            setProjectFile(null);
+            setUploadStep("done");
+            setFailedStep(null);
+            setUploadMessage("Upload completed successfully.");
+            setOverallProgress(100);
+            setErrorDetails([]);
         } catch (err) {
             console.error("Upload failed:", err);
-            alert("Upload failed: " + err.message);
+            setFailedStep(uploadStep);
+            setUploadStep("error");
+            setUploadMessage("Upload failed: "+ err.message);
+            setErrorDetails([err.message || String(err)]);
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -212,7 +316,7 @@ const BulkUpload = () => {
                     <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between", p: 1, border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
                         <Typography sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{projectFile.name}</Typography>
                         <Box>
-                        <Button size="small" onClick={() => setProjectFile(null)}>Remove</Button>
+                        <Button size="small" disabled={isUploading} onClick={() => setProjectFile(null)}>Remove</Button>
                         </Box>
                     </Box>
                     )}
@@ -278,17 +382,92 @@ const BulkUpload = () => {
                     <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between", p: 1, border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
                         <Typography sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{studentFile.name}</Typography>
                         <Box>
-                        <Button size="small" onClick={() => setStudentFile(null)}>Remove</Button>
+                        <Button size="small" disabled={isUploading} onClick={() => setStudentFile(null)}>Remove</Button>
                         </Box>
                     </Box>
                     )}
 
                 </Box>
 
+                {(isUploading || uploadStep === "done" || uploadStep === "error") && (
+                    <Box sx={{ mb: 2 }}>
+                        <Alert severity={uploadStep === "error" ? "error" : uploadStep === "done" ? "success" : "info"}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                {isUploading && <CircularProgress size={16} />}
+                                <Typography variant="body2">
+                                    {uploadMessage || "Preparing upload..."}
+                                </Typography>
+                            </Box>
+                        </Alert>
+
+                        {errorDetails.length > 0 && (
+                            <Box sx={{ mt: 2, p: 2, backgroundColor: "#ffebee", borderRadius: 1, border: "1px solid #ef5350" }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#c62828", mb: 1 }}>
+                                    {uploadStep === "error" ? "Upload Failed" : "Errors Found"}
+                                </Typography>
+                                <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
+                                    {errorDetails.map((error, idx) => (
+                                        <Typography 
+                                            key={idx}
+                                            variant="body2" 
+                                            sx={{ 
+                                                color: "#c62828",
+                                                mb: 0.5,
+                                                fontFamily: "monospace",
+                                                fontSize: "0.85rem",
+                                                wordBreak: "break-word"
+                                            }}
+                                        >
+                                            • {error}
+                                        </Typography>
+                                    ))}
+                                </Box>
+                                <Button 
+                                    size="small" 
+                                    variant="outlined"
+                                    sx={{ mt: 1 }}
+                                    onClick={() => setErrorDetails([])}
+                                >
+                                    Dismiss
+                                </Button>
+                            </Box>
+                        )}
+
+                        <Box sx={{ mt: 1 }}>
+                            {UPLOAD_STEPS.map((step) => {
+                                const status = uploadStep === "done" ? "done" : getStepStatus(step.key);
+                                console.log(`Step: ${step.key}, Status: ${status}`);
+                                return (
+                                <Typography
+                                    key={step.key}
+                                    variant="body2"
+                                    sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    opacity: status === "pending" ? 0.7 : 1,
+                                    fontWeight: status === "active" ? 600 : 400,
+                                    }}
+                                >
+                                    <span>{getStepIcon(status)}</span>
+                                    <span>{step.label}</span>
+                                </Typography>
+                                );
+                            })}
+                        </Box>
+
+                        <Box sx={{ mt: 1 }}>
+                            <LinearProgress variant="determinate" value={overallProgress} />
+                            <Typography variant="caption" sx={{ mt: 0.5, display: "block" }}>
+                                Overall progress: {overallProgress}%
+                            </Typography>
+                        </Box>
+                    </Box>
+                )}
 
                 <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-                    <Button variant="contained" onClick={() => handleUploadFiles()} >Upload Files</Button>
-                    <Button variant="outlined" onClick={() => { setStudentFile(null); setProjectFile(null); }}>Clear</Button>
+                    <Button variant="contained" disabled={isUploading} onClick={() => handleUploadFiles()} >Upload Files</Button>
+                    <Button variant="outlined" disabled={isUploading} onClick={() => { setStudentFile(null); setProjectFile(null); }}>Clear</Button>
                 </Box>
 
             </Box>

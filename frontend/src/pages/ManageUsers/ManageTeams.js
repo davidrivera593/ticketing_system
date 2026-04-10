@@ -315,6 +315,14 @@ const ManageTeam = () => {
                                             <TableCell sx={{ color: theme.palette.text.secondary }}>{team.sponsor_name || "N/A"}</TableCell>
                                             <TableCell sx={{ color: theme.palette.text.secondary }}>{team.grader_name || "N/A"}</TableCell>
                                             <TableCell align="right">
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ mr: 1 }}
+                                                    onClick={() => navigate(`/team-sponsor-history?team_id=${team.team_id}&team_name=${encodeURIComponent(team.team_name)}`)}
+                                                >
+                                                    Sponsor History
+                                                </Button>
                                                 <Button size="small" variant="outlined" sx={{ mr: 1 }} onClick={() => handleEditClick(team)}>
                                                     Edit
                                                 </Button>

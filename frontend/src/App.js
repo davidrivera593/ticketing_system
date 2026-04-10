@@ -45,6 +45,7 @@ import GraderSettings from "./pages/Settings/GraderSettings";
 import DeveloperDash from "./pages/DeveloperDash/DeveloperDash";
 import EscalatedTicketsTA from "./pages/EscalatedTickets/EscalatedTicketsTA";
 import EmailLogs from "./pages/EmailLogs/EmailLogs";
+import TeamSponsorHistory from "./pages/ManageUsers/TeamSponsorHistory";
 
 
 function App() {
@@ -107,6 +108,7 @@ function App() {
               <Route path="/ticketqueue" element={<TicketQueue />} />
               <Route path="/taticketinfo" element={<TaTicketInfo />} />
               <Route path="/taticketview" element={<TaTicketView />} />
+              <Route path="/team-sponsor-history" element={<TeamSponsorHistory />} />
           </Route>
 
           {/* --- Admin Pages--- */}
