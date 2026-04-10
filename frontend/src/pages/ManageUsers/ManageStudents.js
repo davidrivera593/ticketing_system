@@ -494,7 +494,7 @@ const ManageStudents = () => {
             setStudentsToAssign([...selectedStudents]);
             setIsSectionDialogOpen(true);
             return;
-        } else if (action === 'delete') {
+        } else if (action === 'delete') { //delete students
             setIsDeleteDialogOpen(true);
             return;
         } else {
