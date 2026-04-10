@@ -691,7 +691,7 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('edit_section')}>Edit Section</MenuItem>
                             <MenuItem
-                                onClick={() => handleMenuAction('delete')}
+                                onClick={() => handleMenuAction('delete')} // delete button action
                                 sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}
                             >
                                 Remove Selected
