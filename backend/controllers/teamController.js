@@ -1,4 +1,5 @@
 const Team = require("../models/Team");
+const TeamSponsorHistory = require("../models/TeamSponsorHistory");
 
 const normalizeTeamName = (value) =>
   String(value ?? "")
@@ -100,8 +101,21 @@ exports.createTeam = async (req, res) => {
         grader_email,
       },
     });
-    if (created) return res.status(201).json({ created: true, team });
-        return res.status(200).json({ created: false, team });
+    if (created) {
+      // Record the initial sponsor state for newly created teams
+      if (sponsor_name != null || sponsor_email != null) {
+        await TeamSponsorHistory.create({
+          team_id: team.team_id,
+          changed_by: req.user?.id ?? null,
+          old_sponsor_name: null,
+          new_sponsor_name: team.sponsor_name,
+          old_sponsor_email: null,
+          new_sponsor_email: team.sponsor_email,
+        });
+      }
+      return res.status(201).json({ created: true, team });
+    }
+    return res.status(200).json({ created: false, team });
  
   } catch (error) {
      if (error.name === 'SequelizeUniqueConstraintError') {
@@ -120,12 +134,30 @@ exports.createTeam = async (req, res) => {
 exports.updateTeam = async (req, res) => {
   try {
     const team = await Team.findByPk(req.params.team_id);
-    if (team) {
-      await team.update(req.body);
-      res.json(team);
-    } else {
-      res.status(404).json({ error: "Team not found" });
+    if (!team) {
+      return res.status(404).json({ error: "Team not found" });
     }
+
+    const nameChanging = Object.prototype.hasOwnProperty.call(req.body, "sponsor_name") && req.body.sponsor_name !== team.sponsor_name;
+    const emailChanging = Object.prototype.hasOwnProperty.call(req.body, "sponsor_email") && req.body.sponsor_email !== team.sponsor_email;
+
+    const oldSponsorName = team.sponsor_name;
+    const oldSponsorEmail = team.sponsor_email;
+
+    await team.update(req.body);
+
+    if (nameChanging || emailChanging) {
+      await TeamSponsorHistory.create({
+        team_id: team.team_id,
+        changed_by: req.user?.id ?? null,
+        old_sponsor_name: oldSponsorName,
+        new_sponsor_name: team.sponsor_name,
+        old_sponsor_email: oldSponsorEmail,
+        new_sponsor_email: team.sponsor_email,
+      });
+    }
+
+    res.json(team);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

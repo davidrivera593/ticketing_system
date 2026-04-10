@@ -74,7 +74,10 @@ exports.register = async (req, res) => {
     //   // asu_id,
     // });
 
-    if (created) {
+    //Automated e-mail notification for new account creation    
+    //Automatically send for non-students.
+    //Send student ones manually to avoid confusion since students may not expect an account to be created for them when they are.
+    if (created && role !== "student") {
       try {
         const subject = "Welcome to the ASU Capstone Help Desk System";
         const emailBody = 
@@ -102,6 +105,7 @@ exports.register = async (req, res) => {
         console.error(`Failed to send email to ${email}:`, emailError);
       }
     }
+    
 
     if (created) return res.status(201).json({ created: true, user });
     return res.status(200).json({ created: false, user });
