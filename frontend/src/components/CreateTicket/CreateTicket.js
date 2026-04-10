@@ -2,7 +2,8 @@ import Cookies from "js-cookie";
 import React, { useEffect, useState } from "react";
 import {
     Box, Button, Typography, TextField, FormControl,
-    InputLabel, Select, MenuItem, Grid2 as Grid, CircularProgress
+    InputLabel, Select, MenuItem, Grid2 as Grid, CircularProgress,
+    Snackbar, Alert
 } from '@mui/material';
 import { useTheme } from "@mui/material/styles";
 
@@ -24,6 +25,15 @@ const CreateTicket = ({ onClose }) => {
     const [issueType, setIssueType] = useState("");
     const [description, setDescription] = useState("");
     const [instructorId, setInstructorId] = useState(""); // For Student view (Assigned TA/Grader)
+
+    // Pop-up (Snackbar) State
+    const [toast, setToast] = useState({ open: false, message: "", severity: "success" });
+
+    // Function to close the pop-up
+    const handleCloseToast = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setToast({ ...toast, open: false });
+    };
 
     // Team & Student Selection (For Staff/TA View)
     const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -52,7 +62,26 @@ const CreateTicket = ({ onClose }) => {
             if (me) {
                 setIsStudent(true);
                 setStudentData({ section: me.section || "", sponsor: me.sponsor || "" });
+
+                // Fetch the dropdown list of all teams
                 fetchTeams();
+
+                // NEW: Fetch the specific student's assigned team
+                try {
+                    const myTeamRes = await fetch(`${baseURL}/api/studentdata/user/${userId}/team`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+
+                    if (myTeamRes.ok) {
+                        const myTeamData = await myTeamRes.json();
+                        // Auto-populate the team dropdown!
+                        setSelectedTeamId(myTeamData.team_id);
+                    }
+                } catch (teamErr) {
+                    console.error("Could not fetch student's assigned team:", teamErr);
+                }
+
+                // Load staff lists
                 fetchUsersByRole("TA", setTaList);
                 fetchUsersByRole("grader", setGraderList);
             } else {
@@ -143,12 +172,16 @@ const CreateTicket = ({ onClose }) => {
                 });
             }
 
-            alert("Ticket submitted successfully!");
-            onClose();
-            window.location.reload();
+            setToast({ open: true, message: "Ticket submitted successfully!", severity: "success" });
+
+            // Delay the close and reload so the user can read the pop-up
+            setTimeout(() => {
+                onClose();
+                window.location.reload();
+            }, 1500);
         } catch (error) {
-            alert(error.message);
-        } finally {
+            setToast({ open: true, message: error.message || "An error occurred", severity: "error" });        }
+        finally {
             setLoading(false);
         }
     };
@@ -192,16 +225,31 @@ const CreateTicket = ({ onClose }) => {
                     </Grid>
 
                     {/* Team Selection */}
-                    <FormControl fullWidth required>
-                        <InputLabel>Team Name</InputLabel>
-                        <Select
-                            value={selectedTeamId}
-                            label="Team Name"
-                            onChange={(e) => isStudent ? setSelectedTeamId(e.target.value) : handleTeamChange(e.target.value)}
-                        >
-                            {teamList.map((t) => <MenuItem key={t.team_id} value={t.team_id}>{t.team_name}</MenuItem>)}
-                        </Select>
-                    </FormControl>
+                    {isStudent ? (
+                        <TextField
+                            label="Assigned Team"
+                            variant="filled"
+                            size="small"
+                            value={teamList.find(t => t.team_id === selectedTeamId)?.team_name || "Loading..."}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                        />
+                    ) : (
+                        <FormControl fullWidth required>
+                            <InputLabel>Team Name</InputLabel>
+                            <Select
+                                value={selectedTeamId}
+                                label="Team Name"
+                                onChange={(e) => handleTeamChange(e.target.value)}
+                            >
+                                {teamList.map((t) => (
+                                    <MenuItem key={t.team_id} value={t.team_id}>
+                                        {t.team_name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
 
                     {/* On Behalf Of - Staff Only */}
                     {!isStudent && selectedTeamId && (
@@ -265,6 +313,17 @@ const CreateTicket = ({ onClose }) => {
                     </Button>
                 </Box>
             </Box>
+            {/* NEW: Material-UI Snackbar Pop-up */}
+            <Snackbar
+                open={toast.open}
+                autoHideDuration={4000}
+                onClose={handleCloseToast}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleCloseToast} severity={toast.severity} sx={{ width: '100%', boxShadow: 3 }}>
+                    {toast.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

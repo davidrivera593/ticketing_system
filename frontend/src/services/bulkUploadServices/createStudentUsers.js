@@ -1,262 +1,245 @@
-import Cookies from "js-cookie"; 
+import Cookies from "js-cookie";
 import Papa from "papaparse";
-import { generateRandomPassword }  from "../generateRandomPass";
+import { generateRandomPassword } from "../generateRandomPass";
 
-const baseURL = process.env.REACT_APP_API_BASE_URL; 
+const baseURL = process.env.REACT_APP_API_BASE_URL;
 
 const normalizeTeamName = (value) =>
-  String(value ?? "")
-    .replace(/\u00A0/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    String(value ?? "")
+        .replace(/\u00A0/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
 const readJsonOrThrow = async (response) => {
-  const text = await response.text();
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    const snippet = text.slice(0, 160).replace(/\s+/g, " ");
-    throw new Error(`Expected JSON but could not parse response: ${snippet}`);
-  }
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        const snippet = text.slice(0, 160).replace(/\s+/g, " ");
+        throw new Error(`Expected JSON but could not parse response: ${snippet}`);
+    }
 };
+
 const REQUIRED_HEADERS = [
-  "name", 
-  "canvas_user_id", 
-  "user_id", 
-  "login_id", 
-  "sections", 
-  "group_name", 
-  "canvas_group_id", 
-  "sponsor"
+    "name",
+    "canvas_user_id",
+    "user_id",
+    "login_id",
+    "sections",
+    "group_name",
+    "canvas_group_id",
+    "sponsor"
 ];
 
+/** * Fetches team ID by name
+ */
 const getTeam = async (name) => {
-  try {
-    const apiBase = (baseURL || "").toString().trim().replace(/\/+$/, "");
-    if (!apiBase) {
-      throw new Error(
-        "REACT_APP_API_BASE_URL is not set. In dev it should usually be http://localhost:3301"
-      );
-    }
-    const token = Cookies.get("token");
-    const normalizedName = normalizeTeamName(name);
-    const responseTeam = await fetch(`${apiBase}/api/teams/by-name?name=${encodeURIComponent(normalizedName)}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+        const apiBase = (baseURL || "").toString().trim().replace(/\/+$/, "");
+        const token = Cookies.get("token");
+        const normalizedName = normalizeTeamName(name);
+        const response = await fetch(`${apiBase}/api/teams/by-name?name=${encodeURIComponent(normalizedName)}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
 
-    const responseTeamData = await readJsonOrThrow(responseTeam);
-
-    if (responseTeam.ok) {
-        return { success: true, data: responseTeamData.team_id };
-    } else {
-        return { success: false, error: `Failed to fetch Team ID for name ${normalizedName}: ${responseTeamData?.message || responseTeamData?.error || responseTeam.statusText}` };
+        const data = await readJsonOrThrow(response);
+        return response.ok
+            ? { success: true, data: data.team_id }
+            : { success: false, error: data?.message || response.statusText };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
-  } catch (error) {
-      console.error("An error occurred while fetching Team ID:", error);
-      return { success: false, error: `Failed to fetch Team ID for name ${name}: ${error.message}` };
-  }
 };
 
+const updateStudent = async (user_id, name, section, team_id) => {
+    const token = Cookies.get("token");
+
+    try {
+        // 1. Update User Record
+        // Note: Use PUT because your userRoutes.js defines router.put("/:user_id", ...)
+        const resUser = await fetch(`${baseURL}/api/users/${user_id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ name }),
+        });
+
+        // 2. Update Student Metadata
+        // Check your studentDataRoutes.js! If the route is "/api/studentdata/:user_id",
+        // make sure it is ALSO a PUT or POST, not a PATCH.
+        const resSD = await fetch(`${baseURL}/api/studentdata/${user_id}`, {
+            method: "PUT", // Change this to match whatever is in your studentDataRoutes.js
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ section, team_id }),
+        });
+
+        if (!resUser.ok || !resSD.ok) {
+            console.error("Update error details:", {
+                userStatus: resUser.status,
+                sdStatus: resSD.status
+            });
+            return { success: false, error: `User: ${resUser.status}, SD: ${resSD.status}` };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
+/** * Registers or retrieves existing student
+ */
+const addStudent = async (name, email, password, section, team_id) => {
+    try {
+        const token = Cookies.get("token");
+        const responseUser = await fetch(`${baseURL}/api/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+                name, email, password,
+                role: "student",
+                must_change_password: true
+            }),
+        });
+
+        const responseUserData = await responseUser.json();
+        const isConflict = responseUser.status === 409 || responseUserData?.created === false;
+
+        // If user exists, return existing data for comparison
+        if (isConflict) {
+            return { success: true, exists: true, data: responseUserData };
+        }
+
+        if (!responseUser.ok) {
+            return { success: false, error: responseUserData?.message || "Registration failed" };
+        }
+
+        // New user created, now create student data
+        const user_id = responseUserData.user.user_id;
+        const responseSD = await fetch(`${baseURL}/api/studentdata/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ user_id, team_id, section }),
+        });
+
+        return responseSD.ok
+            ? { success: true, data: responseUserData }
+            : { success: false, error: "User created, but Student Data failed" };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
 
 const addTeamMember = async (team_id, user_id) => {
-  try {
-    const token = Cookies.get("token");
-    const responseMember = await fetch(`${baseURL}/api/teammembers/team/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ 
-        team_id: team_id,
-        user_id: user_id 
-      }),
-    });
-
-    const responseMemberData = await responseMember.json();
-
-    const createdFalse = responseMemberData?.created === false;
-    const isConflict = responseMemberData.status === 409 || /unique|already exists|conflict/i.test(responseMemberData?.error || '');
-
-    if (createdFalse || isConflict) { //check if member already existed
-      return { success: true, exists: true, data: responseMemberData };
+    try {
+        const token = Cookies.get("token");
+        const response = await fetch(`${baseURL}/api/teammembers/team/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ team_id, user_id }),
+        });
+        const data = await response.json();
+        return (response.ok || response.status === 409)
+            ? { success: true }
+            : { success: false, error: data?.message };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
-
-    if (!responseMember.ok) { // failed to add team member
-        return { success: false, error: `Failed to add Team Member for team ID ${team_id} and user ID ${user_id}: ${responseMemberData?.message || responseMember.statusText}` };
-    }
-
-    return { success: true, data: responseMemberData };
-
-  } catch (error) {
-      console.error("An error occurred while adding Team Member:", error);
-      return { success: false, error: `Failed to add Team Member for team ID ${team_id} and user ID ${user_id}: ${error.message}` };
-  }
 };
 
-
-const addStudent = async (name, email, password, section, team_id) => {
-  try {
-    const token = Cookies.get("token");
-    //create user account for student
-    const responseUser = await fetch(`${baseURL}/api/auth/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: name,
-        email: email, 
-        password: password, 
-        role: "student",
-        must_change_password: true
-      }),
+const createOrUpdateStudent = async (row) => {
+    const userData = {};
+    REQUIRED_HEADERS.forEach((k) => {
+        userData[k] = (row[k] ?? "").toString().replace(/\u00A0/g, " ").trim();
     });
 
-    const responseUserData = await responseUser.json();
-    //console.log(responseUserData)
-    const { user_id } = responseUserData.user;
+    const name = (userData.name ?? "").replace(/,/g, "").trim();
+    const email = `${userData.login_id}@asu.edu`;
+    const section = (userData.sections ?? "").toString().trim();
+    const teamLookup = await getTeam(userData.group_name);
 
-    const createdFalse = responseUserData?.created === false;
-    const isConflict = responseUserData.status === 409 || /unique|already exists|conflict/i.test(responseUserData?.error || '');
-
-    if (createdFalse || isConflict) { //check if user already existed
-      return { success: true, exists: true, data: responseUserData };
+    if (!teamLookup.success) {
+        return { success: false, error: `Team not found: ${userData.group_name}` };
     }
 
-    if (!responseUser.ok) {  // failed to create user
-      return { 
-        success: false, 
-        error: `User Creation Failed for ${name}: ${responseUserData?.message || responseUserData?.error || responseUser.statusText}` 
-      };
-   
-    } else { //user created successfully, create student data
-      
-      //console.log("Creating user with ID:", user_id, team_id, section);
+    const targetTeamId = teamLookup.data;
+    const password = generateRandomPassword();
 
-      const responseSD = await fetch(`${baseURL}/api/studentdata/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-          body: JSON.stringify({
-            user_id: user_id,
-            team_id: team_id,
-            section: section, 
-        }),
-      });
+    // Attempt to create
+    const result = await addStudent(name, email, password, section, targetTeamId);
 
-      const responseStudentData = await responseSD.json();
-      //console.log(responseStudentData)
+    if (!result.success) return result;
 
-      const createdFalse = responseStudentData?.created === false;
-      const isConflict = responseStudentData.status === 409 || /unique|already exists|conflict/i.test(responseStudentData?.error || '');
+    const user_id = result.data.user.user_id;
 
-      if (createdFalse || isConflict) { //check if studentdata already existed
-        return { success: true, exists: true, data: responseStudentData };
-      }
+    if (result.exists) {
+        // DIFF CHECK: Compare incoming CSV data with existing DB data
+        const existingUser = result.data.user;
+        const existingSD = result.data.studentData; // Assumes backend returns this on conflict
 
-      if (!responseSD.ok) { // failed to create student data
-        return { 
-          success: false,
-          error: `Student Data Failed for ${user_id}: ${responseStudentData?.message || responseStudentData?.error || responseSD.statusText}` 
-        };
+        const needsUpdate =
+            existingUser.name !== name ||
+            existingSD?.section !== section ||
+            existingSD?.team_id !== targetTeamId;
 
-      }   
-      
-      return { success: true, data: responseUserData };
-    }
-  } catch (error) {
-    console.error("An error occurred during registration:", error);
-    return { success: false, error: `Student account Failed for ${name}: ${error.message}` };
-  }  
-};
-
-
-const createStudent = async (row) => {
-  const userData = {};
-  REQUIRED_HEADERS.forEach((k) => {
-    userData[k] = (row[k] ?? "").toString().replace(/\u00A0/g, " ").trim();
-  });
-
-  const name = (userData.name ?? "").replace(/,/g, "").trim();
-  const email = `${userData.login_id}@asu.edu`;
-  const password = generateRandomPassword();
-
-  const section = (userData.sections ?? "").toString().trim();
-  const team_id = await getTeam(userData.group_name);
-
-  if (team_id.success === false) { 
-    return { success: false, error: `Failed to get team ID: ${team_id.error}` };
-  }
-
-  //create student user and student data
-  const studentResult = await addStudent(name, email, password, section, team_id.data);
-
-  if (!studentResult.success) { //failed to create student user/data
-    return { success: false, error: `Failed to create student data: ${studentResult.error}` };
-
-  } else if (studentResult.exists) { //student already existed
-    return { success: true, exists: true, data: studentResult.data };
-
-  } else { //since student was created succesfully, add them to teammembers
-    const user_id = studentResult.data.user.user_id;
-    const teamMemberResult = await addTeamMember(team_id.data, user_id);
-    if (!teamMemberResult.success) {
-      return { success: false, error: `Failed to add team member: ${teamMemberResult.error}` };
+        if (needsUpdate) {
+            const updateRes = await updateStudent(user_id, name, section, targetTeamId);
+            if (!updateRes.success) return updateRes;
+            return { success: true, action: "updated" };
+        }
+        return { success: true, action: "no_change" };
     }
 
-    //TO-DO: email student with reset link?
-    return { success: true, data: studentResult.data };
-  }
+    // If new user, add to team members
+    await addTeamMember(targetTeamId, user_id);
+    return { success: true, action: "created" };
 };
 
 export const generateStudentUsers = (file) => {
     return new Promise((resolve) => {
         Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          quoteChar: '"',
-          escapeChar: '"',
-          quotes: true,
-          delimiter: ',',
-          encoding: "UTF-8",
-          dynamicTyping: false,
-          beforeFirstChunk: (chunk) => chunk.replace(/\r\n?/g, '\n'),
-          transformHeader: (h) => (h || "")
-            .replace(/^\uFEFF/, "")
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, "_")
-            .replace(/[^\w_]/g, ""),
-          transform: (value) => (typeof value === "string" ? value.trim() : value),
-          complete: (results) => {
-            //console.log("Parsed data:", results.data);
-            const rows = results.data || [];
-            const createPromises = rows.map((row) => createStudent(row)); // create all users in parallel and wait for all results
-            Promise.all(createPromises)
-              .then((results) => {
-                const errors = results
-                  .map((r, i) => ({ r, i }))
-                  .filter(x => !x.r.success)
-                  .map(x => `Row ${x.i + 2}: ${x.r.error}`);
-                resolve({ valid: errors.length === 0, errors, rows });
-              })
-              .catch((err) => {
-                resolve({ valid: false, errors: [String(err)], rows });
-              });
-          },
-          error: (err) => {
-            resolve({ valid: false, errors: [String(err)], rows: [] });
-          },
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, ""),
+            complete: async (results) => {
+                const rows = results.data || [];
+                const finalResults = [];
+                const errors = [];
+
+                // Sequential processing to avoid API/DB flooding
+                for (let i = 0; i < rows.length; i++) {
+                    try {
+                        const res = await createOrUpdateStudent(rows[i]);
+                        if (!res.success) {
+                            errors.push(`Row ${i + 2}: ${res.error}`);
+                        }
+                        finalResults.push(res);
+                    } catch (err) {
+                        errors.push(`Row ${i + 2}: Unexpected Error: ${err.message}`);
+                    }
+                }
+
+                resolve({
+                    valid: errors.length === 0,
+                    errors,
+                    rows,
+                    stats: {
+                        created: finalResults.filter(r => r.action === "created").length,
+                        updated: finalResults.filter(r => r.action === "updated").length,
+                        unchanged: finalResults.filter(r => r.action === "no_change").length
+                    }
+                });
+            },
+            error: (err) => resolve({ valid: false, errors: [String(err)], rows: [] }),
         });
     });
-
 };

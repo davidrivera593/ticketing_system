@@ -80,3 +80,23 @@ exports.getStudentsByTeam = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getTeamForStudent = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+
+        const studentData = await StudentData.findOne({
+            where: { user_id },
+            attributes: ['team_id'] // We only need the team_id for this
+        });
+
+        if (studentData && studentData.team_id) {
+            res.json({ team_id: studentData.team_id });
+        } else {
+            res.status(404).json({ error: "No team assigned to this student" });
+        }
+    } catch (error) {
+        console.error("Error fetching student's team:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
