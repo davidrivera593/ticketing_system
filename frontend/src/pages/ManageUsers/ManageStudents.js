@@ -37,7 +37,7 @@ import {
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
-import { generateRandomPassword } from "../../services/generateRandomPass";
+import {generateRandomPassword} from "../../services/generateRandomPass";
 
 const ManageStudents = () => {
     // Master list of all students from API
@@ -560,6 +560,9 @@ const ManageStudents = () => {
             setConfirmNotifyOpen(true);
             setMenuAnchorEl(null);
             return; // Stop here for other actions
+        } else if (action === 'delete') { //delete students
+            setIsDeleteDialogOpen(true);
+            return;
         } else {
             return; // Unknown action
         }
@@ -754,6 +757,12 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('edit_section')}>Edit Section</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('notify')}>Notify Selected</MenuItem>
+                            <MenuItem
+                                onClick={() => handleMenuAction('delete')} // delete button action
+                                sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}
+                            >
+                                Remove Selected
+                            </MenuItem>
                         </Menu>
                     </Toolbar>
                 )}
