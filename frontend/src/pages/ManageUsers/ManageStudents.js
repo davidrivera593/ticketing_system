@@ -556,6 +556,10 @@ const ManageStudents = () => {
             setStudentsToAssign([...selectedStudents]);
             setIsSectionDialogOpen(true);
             return;
+        } else if (action === 'notify') {
+            setConfirmNotifyOpen(true);
+            setMenuAnchorEl(null);
+            return; // Stop here for other actions
         } else {
             return; // Unknown action
         }
@@ -749,6 +753,7 @@ const ManageStudents = () => {
                             <MenuItem onClick={() => handleMenuAction('disable')}>Disable Selected</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('assign_team')}>Assign Team</MenuItem>
                             <MenuItem onClick={() => handleMenuAction('edit_section')}>Edit Section</MenuItem>
+                            <MenuItem onClick={() => handleMenuAction('notify')}>Notify Selected</MenuItem>
                         </Menu>
                     </Toolbar>
                 )}
