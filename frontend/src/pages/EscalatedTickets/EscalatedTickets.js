@@ -9,6 +9,21 @@ import Pagination from "../../components/Pagination/Pagination";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
+const defaultActiveFilters = {
+    sort: null,
+    status: null,
+    source: null,
+    search: "",
+    teamNameSearch: "",
+    escalatedBy: null,
+};
+
+const defaultServerFilters = {
+    sort: null,
+    status: null,
+    escalatedBy: null,
+};
+
 export default function EscalatedTickets() {
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
@@ -16,20 +31,9 @@ export default function EscalatedTickets() {
     const [loading, setLoading] = useState(true);
     const [filterAnchor, setFilterAnchor] = useState(null);
 
-    const [activeFilters, setActiveFilters] = useState({
-        sort: null,
-        status: null,
-        source: null,
-        search: "",
-        teamNameSearch: "",
-        escalatedBy: null, // 'ta' or 'grader'
-    });
+    const [activeFilters, setActiveFilters] = useState(defaultActiveFilters);
 
-    const [serverFilters, setServerFilters] = useState({
-        sort: null,
-        status: null,
-        escalatedBy: null, // Added for server-side filtering
-    });
+    const [serverFilters, setServerFilters] = useState(defaultServerFilters);
 
     const [hideResolved, setHideResolved] = useState(true);
 
@@ -54,17 +58,14 @@ export default function EscalatedTickets() {
     const savedFilters = sessionStorage.getItem('escalatedTickets_filters');
     if (savedFilters) {
       const filters = JSON.parse(savedFilters);
-      setActiveFilters(filters.activeFilters || {
-        sort: null,
-        status: null,
-        source: null,
-        search: "",
-        teamNameSearch: "",
+      setActiveFilters({
+        ...defaultActiveFilters,
+        ...(filters.activeFilters || {}),
       });
       setHideResolved(filters.hideResolved ?? true);
-      setServerFilters(filters.serverFilters || {
-        sort: null,
-        status: null,
+      setServerFilters({
+        ...defaultServerFilters,
+        ...(filters.serverFilters || {}),
       });
       setStudentCurrentPage(filters.studentCurrentPage || 1);
       setStudentItemsPerPage(filters.studentItemsPerPage || 10);
@@ -204,8 +205,8 @@ export default function EscalatedTickets() {
     const handleFilterClose = () => setFilterAnchor(null);
 
     const handleClearFilters = () => {
-        setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "", escalatedBy: null });
-        setServerFilters({ sort: null, status: null, escalatedBy: null });
+        setActiveFilters(defaultActiveFilters);
+        setServerFilters(defaultServerFilters);
     };
 
     if (loading) return <Box sx={{ p: 4, display: "grid", placeItems: "center" }}><CircularProgress /></Box>;

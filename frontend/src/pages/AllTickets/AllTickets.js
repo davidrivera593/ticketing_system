@@ -19,6 +19,16 @@ import Pagination from "../../components/Pagination/Pagination";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
+const defaultActiveFilters = {
+  sort: null,
+  status: null,
+  source: null,
+  search: "",
+  ticketIdSearch: "",
+  teamNameSearch: "",
+  sectionSearch: "",
+};
+
 const AllTickets = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -30,14 +40,7 @@ const AllTickets = () => {
   const [closedTickets, setClosedTickets] = useState(0);
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [filteredTickets, setFilteredTickets] = useState([]);
-  const [activeFilters, setActiveFilters] = useState({
-    sort: null,
-    status: null,
-    source: null,
-    search: "",
-    teamNameSearch: "",
-    sectionSearch:"",
-  });
+  const [activeFilters, setActiveFilters] = useState(defaultActiveFilters);
 
 
 
@@ -70,13 +73,9 @@ const AllTickets = () => {
     const savedFilters = sessionStorage.getItem('allTickets_filters');
     if (savedFilters) {
       const filters = JSON.parse(savedFilters);
-      setActiveFilters(filters.activeFilters || {
-        sort: null,
-        status: null,
-        source: null,
-        search: "",
-        teamNameSearch: "",
-        sectionSearch: "",
+      setActiveFilters({
+        ...defaultActiveFilters,
+        ...(filters.activeFilters || {}),
       });
       setHideResolved(filters.hideResolved ?? true);
       setStudentCurrentPage(filters.studentCurrentPage || 1);
@@ -234,7 +233,7 @@ const AllTickets = () => {
   };
 
   const handleClearFilters = () => {
-    setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "", sectionSearch: "" });
+    setActiveFilters(defaultActiveFilters);
   };
 
     const fetchUserNameForTicket = async (ticket) => {

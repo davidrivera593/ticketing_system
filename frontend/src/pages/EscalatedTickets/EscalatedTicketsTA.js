@@ -9,6 +9,17 @@ import Pagination from "../../components/Pagination/Pagination";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
+const defaultActiveFilters = {
+    sort: null,
+    status: null,
+    search: "",
+    teamNameSearch: "",
+};
+
+const defaultServerFilters = {
+    sort: null,
+};
+
 export default function EscalatedTicketsTA() {
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
@@ -17,15 +28,8 @@ export default function EscalatedTicketsTA() {
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Filtering states
-    const [activeFilters, setActiveFilters] = useState({
-        sort: null,
-        status: null,
-        search: "",
-        teamNameSearch: "",
-    });
-    const [serverFilters, setServerFilters] = useState({
-        sort: null,
-    });
+    const [activeFilters, setActiveFilters] = useState(defaultActiveFilters);
+    const [serverFilters, setServerFilters] = useState(defaultServerFilters);
 
     const [hideResolved, setHideResolved] = useState(true);
 
@@ -141,13 +145,19 @@ export default function EscalatedTicketsTA() {
         const savedFilters = sessionStorage.getItem('escalatedTicketsTA_filters');
         if (savedFilters) {
             const filters = JSON.parse(savedFilters);
-            setActiveFilters(filters.activeFilters || {
-                sort: null,
-                status: null,
-                search: "",
-                teamNameSearch: "",
+            setActiveFilters({
+                ...defaultActiveFilters,
+                ...(filters.activeFilters || {}),
             });
             setHideResolved(filters.hideResolved ?? true);
+            setServerFilters({
+                ...defaultServerFilters,
+                ...(filters.serverFilters || {}),
+            });
+            setStudentCurrentPage(filters.studentCurrentPage || 1);
+            setStudentItemsPerPage(filters.studentItemsPerPage || 10);
+            setTaCurrentPage(filters.taCurrentPage || 1);
+            setTaItemsPerPage(filters.taItemsPerPage || 10);
         }
         setIsInitialized(true);
     }, []);
@@ -156,10 +166,15 @@ export default function EscalatedTicketsTA() {
         if (!isInitialized) return;
         const filters = {
             activeFilters,
+            serverFilters,
             hideResolved,
+            studentCurrentPage,
+            studentItemsPerPage,
+            taCurrentPage,
+            taItemsPerPage,
         };
         sessionStorage.setItem('escalatedTicketsTA_filters', JSON.stringify(filters));
-    }, [activeFilters, hideResolved, isInitialized]);
+    }, [activeFilters, serverFilters, hideResolved, studentCurrentPage, studentItemsPerPage, taCurrentPage, taItemsPerPage, isInitialized]);
 
     useEffect(() => {
         if (!isInitialized) return;

@@ -12,6 +12,16 @@ import { useNavigate } from "react-router-dom";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
+const defaultActiveFilters = {
+    sort: null,
+    status: null,
+    source: null,
+    search: "",
+    ticketIdSearch: "",
+    teamNameSearch: "",
+    sectionSearch: "",
+};
+
 const GraderTickets = () => {
     const theme = useTheme();
     // ... (all other state declarations remain the same) ...
@@ -23,14 +33,7 @@ const GraderTickets = () => {
     const [closedTickets, setClosedTickets] = useState(0);
     const [filteredTickets, setFilteredTickets] = useState([]);
     const [filterAnchor, setFilterAnchor] = useState(null);
-    const [activeFilters, setActiveFilters] = useState({
-        sort: null,
-        status: null,
-        source: null,
-        search: "",
-        teamNameSearch: "",
-        sectionSearch: "",
-    });
+    const [activeFilters, setActiveFilters] = useState(defaultActiveFilters);
     const [hideResolved, setHideResolved] = useState(true);
 
     const [studentCurrentPage, setStudentCurrentPage] = useState(1);
@@ -66,13 +69,9 @@ const GraderTickets = () => {
         const savedFilters = sessionStorage.getItem('graderTickets_filters');
         if (savedFilters) {
             const filters = JSON.parse(savedFilters);
-            setActiveFilters(filters.activeFilters || {
-                sort: null,
-                status: null,
-                source: null,
-                search: "",
-                teamNameSearch: "",
-                sectionSearch: "",
+            setActiveFilters({
+                ...defaultActiveFilters,
+                ...(filters.activeFilters || {}),
             });
             setHideResolved(filters.hideResolved ?? true);
             setStudentCurrentPage(filters.studentCurrentPage || 1);
@@ -232,7 +231,7 @@ const GraderTickets = () => {
     };
 
     const handleClearFilters = () => {
-        setActiveFilters({ sort: null, status: null, source: null, search: "", teamNameSearch: "", sectionSearch: "" });
+        setActiveFilters(defaultActiveFilters);
     };
 
     const handleStudentPageChange = (pageNumber) => {
