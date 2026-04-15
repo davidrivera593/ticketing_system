@@ -53,6 +53,7 @@ const ManageStudents = () => {
     const [confirmNotifyOpen, setConfirmNotifyOpen] = useState(false);
     const [isSendingNotify, setIsSendingNotify] = useState(false);
     const [notifySent, setNotifySent] = useState(false);
+    const [selectedNotificationType, setSelectedNotificationType] = useState("email-notification");
 
     // Add new state for search query
     const [searchQuery, setSearchQuery] = useState("");
@@ -503,6 +504,7 @@ const ManageStudents = () => {
 
     const handleNotifySelected = async () => {
         const selectedStudentData = students.filter(s => selectedStudents.includes(s.user_id));
+        const endpoint = selectedNotificationType;
 
         for (const student of selectedStudentData) {
             const { email } = student;
@@ -512,7 +514,7 @@ const ManageStudents = () => {
                 const randomPass = generateRandomPassword();
                 // console.log("Generated password:", randomPass);
 
-                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/email-notification`, {
+                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/${endpoint}`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -785,6 +787,22 @@ const ManageStudents = () => {
                                 `You have selected ${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'}. Are you sure you want to notify them?`
                             )}
                         </DialogContentText>
+                        {!isSendingNotify && !notifySent && (
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                                <InputLabel id="notification-type-label">Notification type</InputLabel>
+                                <Select
+                                    labelId="notification-type-label"
+                                    id="notification-type"
+                                    value={selectedNotificationType}
+                                    label="Notification type"
+                                    onChange={(event) => setSelectedNotificationType(event.target.value)}
+                                >
+                                    <MenuItem value="email-notification">Welcome E-mail</MenuItem>
+                                    {/* <MenuItem value="email-notification-2">Test2</MenuItem>
+                                    <MenuItem value="email-notification-3">Test3</MenuItem> */}
+                                </Select>
+                            </FormControl>
+                        )}
                     </DialogContent>
                     <DialogActions>
                         {!isSendingNotify && !notifySent && (
