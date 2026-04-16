@@ -3,7 +3,6 @@ const { Op } = require("sequelize");
 const sequelize = require("./db");
 const express = require("express");
 const path = require("path");
-const httplogger = require("../middleware/httplogger");
 const { BugReport } = require("../models");
 
 const FRONTEND_BUILD_PATH = path.join(__dirname, "../../frontend/build");
@@ -50,9 +49,6 @@ module.exports = (app) => {
       credentials: true, // Enable this for sessions/auth
     })
   );
-
-  // Set up httplogger
-  app.use(httplogger);
 
   // Setup JSON parsing middleware
   app.use(require("express").json());
