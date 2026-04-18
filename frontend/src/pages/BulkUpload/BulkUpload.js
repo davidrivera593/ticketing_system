@@ -17,10 +17,7 @@ import {
     Alert,
 } from "@mui/material";
 import { verifyFileService } from "../../services/bulkUploadServices/verifyFile";
-import { generateTAs } from "../../services/bulkUploadServices/createTaUsers";
-import { generateTeams } from "../../services/bulkUploadServices/createTeams";
-import { generateStudentUsers } from "../../services/bulkUploadServices/createStudentUsers";
-import { generateGraders } from "../../services/bulkUploadServices/createGraderUsers";
+import importBulk from "../../services/bulkUploadServices/importBulk";
 import { useTheme } from "@mui/material/styles";
 import {useNavigate} from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -40,12 +37,11 @@ const BulkUpload = () => {
 
     const UPLOAD_STEPS = [
         { key: "validating-project", label: "Validate project file" },
-        { key: "creating-tas", label: "Create TA accounts" },
-        { key: "creating-teams", label: "Create teams" },
         { key: "validating-students", label: "Validate student file" },
-        { key: "creating-students", label: "Create student accounts + memberships" },
-        { key: "creating-graders", label: "Create grader accounts" },
+        { key: "importing-data", label: "Import all data" },
     ];
+
+    const extractRows = (result) => result?.rows || result?.data || result?.parsedData || [];
 
     const getStepIndex = (key) => UPLOAD_STEPS.findIndex((s) => s.key === key);
 
@@ -126,90 +122,43 @@ const BulkUpload = () => {
             setFailedStep(null);
             setUploadStep("validating-project");
             setUploadMessage("Validating project file...");
-            setOverallProgress(5);
+            setOverallProgress(15);
 
             const verifyProjectResult = await verifyFileService(projectFile, "project");
             if (!verifyProjectResult.valid) {
-                console.error("Project file verification failed:", verifyProjectResult.errors);
                 setFailedStep("validating-project");
                 setUploadStep("error");
                 setErrorDetails(verifyProjectResult.errors);
                 return;
             }
 
-            setUploadStep("creating-tas");
-            setUploadMessage("Creating TA accounts...");
-            setOverallProgress(20);
-
-            const genTaResult = await generateTAs(projectFile);
-            if (!genTaResult.valid) {
-                console.error("TA creation failed:", genTaResult.errors);
-                setFailedStep("creating-tas");
-                setUploadStep("error");
-                setErrorDetails(genTaResult.errors);
-                return;
-            }
-
-            setUploadStep("creating-teams");
-            setUploadMessage("Creating teams...");
-            setOverallProgress(40);
-            
-            const genTeamResult = await generateTeams(projectFile);
-            if (!genTeamResult.valid) {
-                console.error("Team creation failed:", genTeamResult.errors);
-                setFailedStep("creating-teams");
-                setUploadStep("error");
-                setErrorDetails(genTeamResult.errors);
-                return;
-            }
-
             setUploadStep("validating-students");
             setUploadMessage("Validating student file...");
-            setOverallProgress(55);
+            setOverallProgress(35);
 
             const verifyStudentResult = await verifyFileService(studentFile, "student");
             if (!verifyStudentResult.valid) {
-                console.error("Student file verification failed:", verifyStudentResult.errors);
                 setFailedStep("validating-students");
                 setUploadStep("error");
                 setErrorDetails(verifyStudentResult.errors);
                 return;
             }
 
-            setUploadStep("creating-students");
-            setUploadMessage("Creating student accounts and team mappings...");
-            setOverallProgress(70);
-    
-            const genStudentResult = await generateStudentUsers(studentFile);
-            if (!genStudentResult.valid) {
-                console.error("User creation failed:", genStudentResult.errors);
-                setFailedStep("creating-students");
-                setUploadStep("error");
-                setErrorDetails(genStudentResult.errors);
-                return;
-            }
+            setUploadStep("importing-data");
+            setUploadMessage("Importing data...");
+            setOverallProgress(65);
 
-            setUploadStep("creating-graders");
-            setUploadMessage("Creating grader accounts...");
-            setOverallProgress(90);
-
-            const genGraderResult = await generateGraders(projectFile);
-            if (!genGraderResult.valid) {
-                console.error("Grader creation failed:", genGraderResult.errors);
-                setFailedStep("creating-graders");
-                setUploadStep("error");
-                setErrorDetails(genGraderResult.errors);
-                return;
-            }
+            await importBulk({
+                projectRows: extractRows(verifyProjectResult),
+                studentRows: extractRows(verifyStudentResult),
+            });
             
             setUploadStep("done");
-            setFailedStep(null);
             setUploadMessage("Upload completed successfully.");
             setOverallProgress(100);
             setErrorDetails([]);
         } catch (err) {
-            console.error("Upload failed:", err);
-            setFailedStep(uploadStep);
+            setFailedStep(uploadStep === "idle" ? "importing-data" : uploadStep);
             setUploadStep("error");
             setUploadMessage("Upload failed: "+ err.message);
             setErrorDetails([err.message || String(err)]);
@@ -436,7 +385,6 @@ const BulkUpload = () => {
                         <Box sx={{ mt: 1 }}>
                             {UPLOAD_STEPS.map((step) => {
                                 const status = uploadStep === "done" ? "done" : getStepStatus(step.key);
-                                console.log(`Step: ${step.key}, Status: ${status}`);
                                 return (
                                 <Typography
                                     key={step.key}
